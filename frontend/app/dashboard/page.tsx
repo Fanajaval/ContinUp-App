@@ -11,6 +11,7 @@ import TopBar from "@/components/layout/TopBar";
 import ProjectCard from "@/components/project/ProjectCard";
 import ActivityBlock from "@/components/dashboard/ActivityBlock";
 import { useToast } from "@/components/signal/ToastProvider";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
 
 /**
  * M5 — DASHBOARD.
@@ -48,6 +49,7 @@ function scoreMotivationnel(p: Project): number {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { push } = useToast();
 
   useEffect(() => {
@@ -175,10 +177,10 @@ export default function DashboardPage() {
               )}
               Simuler J+4
             </button>
-            <a href="/onboarding" className="btn-primary">
+            <button onClick={() => setShowOnboarding(true)} className="btn-primary">
               <Plus size={14} />
               Nouveau chantier
-            </a>
+            </button>
           </div>
         </motion.div>
 
@@ -195,9 +197,9 @@ export default function DashboardPage() {
                   Associe un repo — même vide, même à moitié fini. C'est
                   justement pour ceux-là qu'on est là.
                 </p>
-                <a href="/onboarding" className="btn-primary mt-1">
+                <button onClick={() => setShowOnboarding(true)} className="btn-primary mt-1">
                   Commencer
-                </a>
+                </button>
               </div>
             ) : (
               <div className="grid gap-5 sm:grid-cols-2">
@@ -220,6 +222,12 @@ export default function DashboardPage() {
           />
         </div>
       </main>
+
+      {/* Pop-up Modale d'Onboarding */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
     </div>
   );
 }

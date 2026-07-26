@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   Circle,
@@ -29,12 +30,60 @@ import { useToast } from "@/components/signal/ToastProvider";
  * C'est le moment le plus important de tout le produit.
  */
 
+function getTechStepLabel(repoNom: string, etapeId: string, hint: string): string {
+  const repoLow = repoNom.toLowerCase();
+
+  if (repoLow.includes("stock")) {
+    switch (etapeId) {
+      case "terrain": return "Config Repo & Setup initial (gestion-stock)";
+      case "fondations": return "Schéma BDD SQL & Modèle Stock / Produits";
+      case "murs": return "API REST CRUD Entrées & Sorties Stock";
+      case "toit": return "Middleware Auth & Sécurité JWT";
+      case "fenetres": return "UI Dashboard Inventaire & Tableaux";
+      case "porte": return "Formulaire Connexion & Landing Page";
+      case "jardin": return "Alertes Seuil de Stock & Polish UI";
+      case "emmenagement": return "Déploiement Prod & Release Finale";
+    }
+  }
+
+  if (repoLow.includes("reservation") || repoLow.includes("booking")) {
+    switch (etapeId) {
+      case "terrain": return "Setup Docker & Init Express";
+      case "fondations": return "Schéma BDD Réservations & Plages Horaires";
+      case "murs": return "API Booking & Logique Disponibilité";
+      case "toit": return "Authentification OAuth & Token JWT";
+      case "fenetres": return "UI Calendrier de Réservation & Modales";
+      case "porte": return "Onboarding Client & Login Flow";
+      case "jardin": return "Notifications Email & Polish Design";
+      case "emmenagement": return "Tests d'Intégration & Release Prod";
+    }
+  }
+
+  if (repoLow.includes("portfolio")) {
+    switch (etapeId) {
+      case "terrain": return "Config Next.js & Tailwind CSS";
+      case "fondations": return "Schéma Projets & Storage CMS";
+      case "murs": return "Galerie de Projets & Composants Work";
+      case "toit": return "Formulaire de Contact & Anti-Spam";
+      case "fenetres": return "Page À Propos & Smooth Scroll UI";
+      case "porte": return "Page d'Accueil & Hero Banner";
+      case "jardin": return "Micro-animations & Dark Mode Polish";
+      case "emmenagement": return "Vercel Deploy & Domaine Perso";
+    }
+  }
+
+  const keywords = hint.split(",").slice(0, 2).join(", ");
+  return `Module Code : ${keywords}`;
+}
+
 export default function ProjetPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [projet, setProjet] = useState<Project | null>(null);
   const [sync, setSync] = useState(false);
   const [retour, setRetour] = useState(false);
+  const [vueEtape, setVueEtape] = useState<"cote_a_cote" | "projet" | "metaphore">("cote_a_cote");
   const dejaCelebre = useRef(false);
   const { push } = useToast();
 
@@ -135,7 +184,18 @@ export default function ProjetPage() {
         )}
       </AnimatePresence>
 
-      <main className="mx-auto max-w-5xl px-5 py-7">
+      <main className="mx-auto max-w-5xl px-5 py-6">
+        {/* ── Bouton de retour ───────────────────────────────────── */}
+        <div className="mb-5">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="btn-ghost group inline-flex items-center gap-2 px-3 py-1.5 text-xs text-muted hover:text-ink transition-colors"
+          >
+            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
+            Retour au tableau de bord
+          </button>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
           {/* ── Le rêve en grand ──────────────────────────────── */}
           <div>
@@ -224,37 +284,144 @@ export default function ProjetPage() {
             )}
           </div>
 
-          {/* ── Colonne : les étapes du template ──────────────── */}
+          {/* ── Colonne : les étapes du projet (Code + Illustration Rêve) ──────────────── */}
           <aside className="space-y-4">
             <div className="panel p-4">
-              <p className="label-xs mb-3">Les étapes de {tpl.nom.toLowerCase()}</p>
-              <ol className="space-y-2.5">
-                {tpl.etapes.map((e) => {
+              <div className="mb-3 flex items-center justify-between">
+                <p className="label-xs">Étapes du Projet</p>
+
+                {/* Boutons de basculement de vue */}
+                <div className="flex gap-1 rounded-lg border border-line bg-surface/60 p-0.5 text-[11px]">
+                  <button
+                    onClick={() => setVueEtape("cote_a_cote")}
+                    className={cn(
+                      "rounded-md px-2 py-0.5 transition-all font-medium",
+                      vueEtape === "cote_a_cote"
+                        ? "bg-candle/20 text-candle font-semibold"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    ⚡ Deux Vues
+                  </button>
+                  <button
+                    onClick={() => setVueEtape("projet")}
+                    className={cn(
+                      "rounded-md px-2 py-0.5 transition-all font-medium",
+                      vueEtape === "projet"
+                        ? "bg-candle/20 text-candle font-semibold"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    📦 Code
+                  </button>
+                  <button
+                    onClick={() => setVueEtape("metaphore")}
+                    className={cn(
+                      "rounded-md px-2 py-0.5 transition-all font-medium",
+                      vueEtape === "metaphore"
+                        ? "bg-candle/20 text-candle font-semibold"
+                        : "text-muted hover:text-ink"
+                    )}
+                  >
+                    🏠 Rêve
+                  </button>
+                </div>
+              </div>
+
+              <ol className="space-y-3">
+                {tpl.etapes.map((e, index) => {
                   const fait = projet.etapes_done.includes(e.id);
                   const cible = suivante?.id === e.id;
+                  const techLabel = getTechStepLabel(projet.repo_nom, e.id, e.hint);
+
                   return (
-                    <li key={e.id} className="flex items-center gap-2.5">
-                      {fait ? (
-                        <Check size={14} className="shrink-0 text-grow" strokeWidth={3} />
-                      ) : (
-                        <Circle
-                          size={14}
-                          className={cn("shrink-0", cible ? "text-candle" : "text-faint")}
-                        />
+                    <li
+                      key={e.id}
+                      className={cn(
+                        "rounded-xl border p-2.5 transition-all",
+                        fait
+                          ? "border-grow/30 bg-grow/[0.04]"
+                          : cible
+                          ? "border-candle/50 bg-candle/[0.07] shadow-candle"
+                          : "border-line/60 bg-surface/30 opacity-75"
                       )}
-                      <span
-                        className={cn(
-                          "text-[13px]",
-                          fait ? "text-ink" : cible ? "font-medium text-candle" : "text-faint"
+                    >
+                      <div className="flex items-start gap-2">
+                        {fait ? (
+                          <Check size={15} className="mt-0.5 shrink-0 text-grow" strokeWidth={3} />
+                        ) : (
+                          <Circle
+                            size={15}
+                            className={cn("mt-0.5 shrink-0", cible ? "text-candle animate-pulse" : "text-faint")}
+                          />
                         )}
-                      >
-                        {e.label}
-                      </span>
-                      {cible && (
-                        <span className="ml-auto text-[10px] uppercase tracking-wide text-candle/70">
-                          à venir
-                        </span>
-                      )}
+
+                        <div className="min-w-0 flex-1">
+                          {/* Vue 1: Côte à côte (Affiche les DEUX étapes : Code Réel + Illustration Rêve) */}
+                          {vueEtape === "cote_a_cote" && (
+                            <div className="space-y-1">
+                              {/* 📦 Étape du Projet Code (ex: Gestion de stock) */}
+                              <div className="flex items-center justify-between gap-1">
+                                <span
+                                  className={cn(
+                                    "text-[12.5px] font-semibold truncate",
+                                    fait ? "text-ink" : cible ? "text-candle" : "text-faint"
+                                  )}
+                                >
+                                  💻 {index + 1}. {techLabel}
+                                </span>
+                                {cible && (
+                                  <span className="shrink-0 rounded bg-candle/20 px-1.5 py-0.5 text-[9.5px] font-bold uppercase text-candle">
+                                    En cours
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* 🏠 Étape de l'Illustration (ex: Maison) */}
+                              <div className="flex items-center gap-1.5 text-[11.5px] text-muted border-t border-line/40 pt-1 mt-1">
+                                <span className="text-candle/80">Illustration Rêve :</span>
+                                <span className={cn(fait ? "text-grow font-medium" : "text-muted")}>
+                                  {e.label}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Vue 2: Code Projet uniquement */}
+                          {vueEtape === "projet" && (
+                            <div>
+                              <p
+                                className={cn(
+                                  "text-[13px] font-semibold",
+                                  fait ? "text-ink" : cible ? "text-candle" : "text-faint"
+                                )}
+                              >
+                                💻 {index + 1}. {techLabel}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-faint truncate">
+                                {e.hint}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Vue 3: Métaphore / Illustration du Rêve uniquement */}
+                          {vueEtape === "metaphore" && (
+                            <div>
+                              <p
+                                className={cn(
+                                  "text-[13px] font-semibold",
+                                  fait ? "text-ink" : cible ? "text-candle" : "text-faint"
+                                )}
+                              >
+                                {tpl.emoji} {e.label}
+                              </p>
+                              <p className="mt-0.5 text-[11px] text-muted">
+                                {e.hint}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </li>
                   );
                 })}
@@ -263,7 +430,7 @@ export default function ProjetPage() {
 
             {events.length > 0 && (
               <div className="panel p-4">
-                <p className="label-xs mb-3">Historique</p>
+                <p className="label-xs mb-3">Historique des Exploits</p>
                 <ul className="space-y-2.5">
                   {events.map((ev) => (
                     <li key={ev.id} className="flex items-start gap-2">
@@ -272,7 +439,7 @@ export default function ProjetPage() {
                         <p className="truncate text-[12.5px] text-ink/90">{ev.label}</p>
                         <p className="text-[11px] text-faint">{depuis(ev.date)}</p>
                       </div>
-                      <span className="text-[11px] font-semibold text-grow">+{ev.xp}</span>
+                      <span className="text-[11px] font-semibold text-grow">+{ev.xp} XP</span>
                     </li>
                   ))}
                 </ul>
