@@ -112,7 +112,7 @@ export default function TopBar({
                   {pseudo}
                 </div>
                 <Link
-                  href="/dashboard"
+                  href="/account"
                   className="group relative flex items-center gap-3 px-4 py-4 text-sm text-ink transition hover:bg-white/5"
                   onClick={() => setProfileOpen(false)}
                 >
