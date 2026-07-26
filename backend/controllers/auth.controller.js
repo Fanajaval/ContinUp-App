@@ -36,12 +36,27 @@ function authResponse(user) {
   };
 }
 
+function normalizeGithubUsername(value) {
+  const username = String(value || "")
+    .trim()
+    .replace(/^@/, "");
+
+  return /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username)
+    ? username.toLowerCase()
+    : null;
+}
+
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const name = String(req.body.name || "").trim();
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
+    const githubUsername = normalizeGithubUsername(req.body.github_username);
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Nom, email et mot de passe requis" });
+    if (!name || !email || !password || !githubUsername) {
+      return res.status(400).json({
+        message: "Nom, email, compte GitHub et mot de passe requis",
+      });
     }
 
     if (password.length < 6) {
@@ -53,14 +68,22 @@ exports.register = async (req, res) => {
       return res.status(409).json({ message: "Email déjà utilisé" });
     }
 
+    const existingGithubAccount = await User.findOne({
+      where: { github_username: githubUsername },
+    });
+    if (existingGithubAccount) {
+      return res.status(409).json({ message: "Ce compte GitHub est déjà associé" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    await User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
+      github_username: githubUsername,
     });
 
-    return res.status(201).json({ message: "Compte créé" });
+    return res.status(201).json(authResponse(user));
   } catch (error) {
     console.error("Erreur inscription:", error);
     return res.status(500).json({ message: "Erreur serveur" });
@@ -69,7 +92,8 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const password = String(req.body.password || "");
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email et mot de passe requis" });

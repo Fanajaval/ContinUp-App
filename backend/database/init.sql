@@ -10,9 +10,10 @@ CREATE TABLE IF NOT EXISTS users (
   email       VARCHAR(150) NOT NULL UNIQUE,
   password    VARCHAR(255),
   github_id   VARCHAR(64) UNIQUE,
+  github_username VARCHAR(39) UNIQUE,
   photo       TEXT,
   bio         TEXT,
-  role        VARCHAR(20) NOT NULL DEFAULT 'USER',
+  role        VARCHAR(20) NOT NULL DEFAULT 'user',
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

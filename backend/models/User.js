@@ -31,6 +31,11 @@ const User = sequelize.define(
       allowNull: true,
       unique: true,
     },
+    github_username: {
+      type: DataTypes.STRING(39),
+      allowNull: true,
+      unique: true,
+    },
     photo: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -42,7 +47,7 @@ const User = sequelize.define(
     role: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      defaultValue: "USER",
+      defaultValue: "user",
     },
   },
   {

@@ -18,6 +18,15 @@ async function startServer() {
 
     // Ne force pas alter:true pour ne pas casser le schéma init.sql
     await sequelize.sync();
+    await sequelize.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id VARCHAR(64) UNIQUE"
+    );
+    await sequelize.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username VARCHAR(39) UNIQUE"
+    );
+    await sequelize.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+    );
     console.log("✅ Modèles synchronisés");
 
     app.listen(PORT, () => {

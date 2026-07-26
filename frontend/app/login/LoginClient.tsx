@@ -1,200 +1,154 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Github, Loader2, Mail, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Github,
+  Loader2,
+  Lock,
+  Mail,
+  UserRound,
+} from "lucide-react";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useUiToast } from "@/components/ui/ToastProvider";
 import { getToken, setSession } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-
-type FieldErrors = {
-  name?: string;
-  email?: string;
-  github?: string;
-};
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
 function isValidGithubUsername(value: string) {
-  const u = value.trim().replace(/^@/, "");
-  return /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(u);
+  const username = value.trim().replace(/^@/, "");
+  return /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username);
 }
 
 export default function LoginClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast, dismiss } = useUiToast();
 
-  const [name, setName] = useState("");
+  // Mode: "login" (Connexion) ou "register" (Création de compte)
+  const [mode, setMode] = useState<"login" | "register">("login");
+
+  // Champs de formulaire
   const [email, setEmail] = useState("");
-  const [githubUsername, setGithubUsername] = useState("");
-  const [showGithubForm, setShowGithubForm] = useState(false);
-  const [touched, setTouched] = useState<{
-    name?: boolean;
-    email?: boolean;
-    github?: boolean;
-  }>({});
-  const [busy, setBusy] = useState<null | "github" | "email">(null);
-  const [needName, setNeedName] = useState(false);
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [githubAccount, setGithubAccount] = useState("");
 
-  const errors: FieldErrors = useMemo(() => {
-    const next: FieldErrors = {};
-    if (touched.name || needName) {
-      if (name.trim().length > 0 && name.trim().length < 2) {
-        next.name = "Au moins 2 caractères";
-      }
-      if (needName && name.trim().length < 2) {
-        next.name = "Ton nom est requis pour créer le compte";
-      }
-    }
-    if (touched.email) {
-      if (!email.trim()) next.email = "L'adresse email est requise";
-      else if (!isValidEmail(email)) next.email = "Adresse email invalide";
-    }
-    if (touched.github) {
-      if (!githubUsername.trim()) {
-        next.github = "Indique ton nom d'utilisateur GitHub";
-      } else if (!isValidGithubUsername(githubUsername)) {
-        next.github = "Nom d'utilisateur GitHub invalide";
-      }
-    }
-    return next;
-  }, [name, email, githubUsername, touched, needName]);
-
-  const emailReady =
-    isValidEmail(email) && (!needName || name.trim().length >= 2);
-  const githubReady = isValidGithubUsername(githubUsername);
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("oauth") === "error") {
-      toast({
-        kind: "info",
-        message: "Connexion GitHub interrompue",
-        detail: "Réessaie avec ton nom d'utilisateur GitHub.",
-      });
-      router.replace("/login");
-      return;
-    }
     if (getToken()) {
       router.replace("/dashboard");
     }
-  }, [searchParams, router, toast]);
+  }, [router]);
 
-  async function onGithubSubmit(e: React.FormEvent) {
+  // Validation Connexion (Email + Mot de passe)
+  const loginReady = isValidEmail(email) && password.length > 0;
+
+  // Validation Inscription (Nom/Prénom + Email + GitHub + Mot de passe)
+  const registerReady =
+    fullName.trim().length >= 2 &&
+    isValidEmail(email) &&
+    isValidGithubUsername(githubAccount) &&
+    password.trim().length >= 6;
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setTouched((t) => ({ ...t, github: true }));
-    if (!isValidGithubUsername(githubUsername)) {
-      toast({ kind: "info", message: "Nom d'utilisateur GitHub invalide" });
-      return;
+
+    if (mode === "login") {
+      if (!isValidEmail(email)) {
+        toast({ kind: "info", message: "Adresse email invalide" });
+        return;
+      }
+      if (!password) {
+        toast({ kind: "info", message: "Mot de passe requis" });
+        return;
+      }
+    } else {
+      if (fullName.trim().length < 2) {
+        toast({ kind: "info", message: "Veuillez entrer votre nom et prénom(s)" });
+        return;
+      }
+      if (!isValidEmail(email)) {
+        toast({ kind: "info", message: "Adresse email invalide" });
+        return;
+      }
+      if (!isValidGithubUsername(githubAccount)) {
+        toast({ kind: "info", message: "Compte GitHub invalide" });
+        return;
+      }
+      if (password.trim().length < 6) {
+        toast({ kind: "info", message: "Le mot de passe doit contenir au moins 6 caractères" });
+        return;
+      }
     }
 
-    setBusy("github");
+    setBusy(true);
     const loadingId = toast({
       kind: "loading",
-      message: `Récupération de @${githubUsername.trim().replace(/^@/, "")}…`,
+      message: mode === "login" ? "Connexion en cours…" : "Création de ton compte…",
     });
 
     try {
-      const res = await fetch("/api/auth/github", {
+      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+      const payload =
+        mode === "login"
+          ? { email: email.trim().toLowerCase(), password }
+          : {
+              name: fullName.trim(),
+              email: email.trim().toLowerCase(),
+              github_username: githubAccount.trim().replace(/^@/, ""),
+              password,
+            };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: githubUsername.trim().replace(/^@/, ""),
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Compte GitHub introuvable");
-      }
+      const data = await res.json().catch(() => ({}));
 
-      setSession(data.token, {
-        id: String(data.user.id),
-        name: data.user.name,
-        photo: data.github?.avatar_url ?? null,
-      });
       dismiss(loadingId);
-      toast({
-        kind: "success",
-        message: `Connecté en tant que @${data.github?.login || data.user.name}`,
-      });
-      router.push("/onboarding");
-    } catch (err) {
-      dismiss(loadingId);
-      toast({
-        kind: "info",
-        message: err instanceof Error ? err.message : "Échec GitHub",
-        duration: 5000,
-      });
-      setBusy(null);
-    }
-  }
 
-  async function onEmail(e: React.FormEvent) {
-    e.preventDefault();
-    setTouched({ name: true, email: true });
-
-    if (!isValidEmail(email)) {
-      toast({ kind: "info", message: "Adresse email invalide" });
-      return;
-    }
-
-    setBusy("email");
-    const loadingId = toast({ kind: "loading", message: "Connexion en cours…" });
-
-    try {
-      const res = await fetch("/api/auth/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      if (res.ok && data.token) {
+        setSession(data.token, {
+          id: String(data.user?.id || "u1"),
+          name: data.user?.name || fullName.trim() || email.split("@")[0],
           email: email.trim().toLowerCase(),
-          name: name.trim() || undefined,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.status === 400 && data.needName) {
-        setNeedName(true);
-        setTouched((t) => ({ ...t, name: true }));
-        dismiss(loadingId);
+        });
+        toast({
+          kind: "success",
+          message: mode === "login" ? `Ravi de te revoir !` : `Compte créé avec succès !`,
+        });
+        router.push("/onboarding");
+      } else {
         toast({
           kind: "info",
-          message: "Premier passage ?",
-          detail: "Indique ton nom pour ouvrir ton espace ContinUp.",
+          message: data.message || "Impossible de terminer l’opération",
         });
-        setBusy(null);
-        return;
       }
-
-      if (!res.ok) {
-        throw new Error(data.message || "Échec de connexion");
-      }
-
-      setSession(data.token, {
-        id: String(data.user.id),
-        name: data.user.name,
-        email: email.trim().toLowerCase(),
-      });
-      dismiss(loadingId);
-      toast({ kind: "success", message: `Bienvenue, ${data.user.name}` });
-      router.push("/onboarding");
     } catch (err) {
       dismiss(loadingId);
       toast({
         kind: "info",
-        message: err instanceof Error ? err.message : "Échec de connexion",
-        duration: 4500,
+        message: err instanceof Error ? err.message : "Impossible de joindre le serveur",
       });
-      setBusy(null);
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      {/* Halos de lumière en arrière-plan */}
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -203,11 +157,13 @@ export default function LoginClient() {
             "radial-gradient(ellipse 80% 60% at 15% 20%, rgb(245 184 65 / 0.14), transparent 55%), radial-gradient(ellipse 70% 50% at 90% 80%, rgb(74 222 155 / 0.1), transparent 50%), radial-gradient(ellipse 50% 40% at 60% 10%, rgb(124 147 184 / 0.08), transparent 45%)",
         }}
       />
+
       <div className="absolute right-5 top-5 z-10">
         <ThemeToggle />
       </div>
 
       <div className="relative mx-auto grid min-h-screen max-w-5xl items-center gap-12 px-5 py-14 lg:grid-cols-2">
+        {/* Présentation du produit */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -245,204 +201,211 @@ export default function LoginClient() {
               "Un projet à moitié fini n'est pas un échec — c'est une histoire en pause.",
               "Chaque commit allume une brique. Chaque retour compte double.",
             ].map((line) => (
-              <p
-                key={line}
-                className="text-[13.5px] leading-relaxed text-ink/80"
-              >
+              <p key={line} className="text-[13.5px] leading-relaxed text-ink/80">
                 {line}
               </p>
             ))}
           </div>
         </motion.div>
 
+        {/* Panneau Formulaire (Connexion / Inscription) */}
         <motion.div
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="order-1 lg:order-2"
         >
-          <div className="panel p-6 shadow-lift sm:p-7">
-            <h2 className="font-display text-[22px] font-bold text-ink">
-              Continuer ton histoire
-            </h2>
-            <p className="mt-1.5 text-[13.5px] leading-snug text-muted">
-              Le plus dur, c&apos;est de rouvrir le dossier. On s&apos;occupe du
-              reste.
-            </p>
-
-            {!showGithubForm ? (
+          <div className="panel p-6 shadow-lift sm:p-8">
+            {/* Onglets de Basculement : Connexion / Création de compte */}
+            <div className="mb-6 flex rounded-xl border border-line bg-surface/60 p-1">
               <button
                 type="button"
-                onClick={() => setShowGithubForm(true)}
-                disabled={!!busy}
-                className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-xl
-                           bg-ink px-4 py-3.5 text-[14px] font-semibold text-night
-                           transition-opacity hover:opacity-90 disabled:opacity-50"
+                onClick={() => setMode("login")}
+                className={cn(
+                  "flex-1 rounded-lg py-2 text-[13.5px] font-semibold transition-all",
+                  mode === "login"
+                    ? "bg-candle text-night shadow-candle"
+                    : "text-muted hover:text-ink"
+                )}
               >
-                <Github size={16} />
-                Continuer avec GitHub
+                Se connecter
               </button>
-            ) : (
-              <AnimatePresence>
-                <motion.form
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  onSubmit={onGithubSubmit}
-                  className="mt-6 space-y-3"
-                  noValidate
-                >
-                  <label
-                    htmlFor="continup-github"
-                    className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
-                  >
-                    Nom d&apos;utilisateur GitHub
-                  </label>
-                  <div
-                    className={cn(
-                      "flex items-center gap-2 rounded-xl border bg-surface/60 px-3.5 py-3 transition-colors",
-                      errors.github ? "border-ember/50" : "border-line/80"
-                    )}
-                  >
-                    <Github size={15} className="shrink-0 text-faint" />
-                    <span className="text-[14px] text-faint">@</span>
-                    <input
-                      id="continup-github"
-                      value={githubUsername}
-                      onChange={(e) =>
-                        setGithubUsername(e.target.value.replace(/\s/g, ""))
-                      }
-                      onBlur={() =>
-                        setTouched((t) => ({ ...t, github: true }))
-                      }
-                      placeholder="ton-username"
-                      autoFocus
-                      autoComplete="username"
-                      className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none focus:ring-0"
-                    />
-                  </div>
-                  {errors.github && (
-                    <p className="text-[12px] text-ember">{errors.github}</p>
-                  )}
-                  <p className="text-[11.5px] text-faint">
-                    On récupère ton profil public GitHub pour te connecter —
-                    le tien, pas un compte générique.
-                  </p>
-                  <button
-                    type="submit"
-                    disabled={busy === "github" || !githubReady}
-                    className="btn-primary w-full py-3"
-                  >
-                    {busy === "github" ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <>
-                        Se connecter avec ce compte
-                        <ArrowRight size={14} />
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowGithubForm(false);
-                      setGithubUsername("");
-                      setTouched((t) => ({ ...t, github: false }));
-                    }}
-                    className="w-full text-center text-[12px] text-faint hover:text-muted"
-                  >
-                    Annuler
-                  </button>
-                </motion.form>
-              </AnimatePresence>
-            )}
-
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-line" />
-              <span className="text-[11px] uppercase tracking-wider text-faint">
-                ou par email
-              </span>
-              <div className="h-px flex-1 bg-line" />
+              <button
+                type="button"
+                onClick={() => setMode("register")}
+                className={cn(
+                  "flex-1 rounded-lg py-2 text-[13.5px] font-semibold transition-all",
+                  mode === "register"
+                    ? "bg-candle text-night shadow-candle"
+                    : "text-muted hover:text-ink"
+                )}
+              >
+                Créer un compte
+              </button>
             </div>
 
-            <form onSubmit={onEmail} className="space-y-4" noValidate>
-              <div>
-                <label
-                  htmlFor="continup-name"
-                  className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
-                >
-                  Nom
-                </label>
-                <div
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl border bg-surface/60 px-3.5 py-3 transition-colors",
-                    errors.name ? "border-ember/50" : "border-line/80"
-                  )}
-                >
-                  <UserRound size={15} className="shrink-0 text-faint" />
-                  <input
-                    id="continup-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-                    placeholder="Ton prénom ou pseudo"
-                    autoComplete="name"
-                    className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none focus:ring-0"
-                  />
-                </div>
-                {errors.name && (
-                  <p className="mt-1.5 text-[12px] text-ember">{errors.name}</p>
-                )}
-              </div>
+            <div className="mb-5">
+              <h2 className="font-display text-[22px] font-bold text-ink">
+                {mode === "login" ? "Connexion" : "Créer ton compte"}
+              </h2>
+              <p className="mt-1 text-[13.5px] leading-snug text-muted">
+                {mode === "login"
+                  ? "Renseigne ton email et ton mot de passe pour accéder à ton espace."
+                  : "Complète les informations ci-dessous pour ouvrir ton chantier."}
+              </p>
+            </div>
 
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <AnimatePresence mode="wait">
+                {/* ══════════ SEULEMENT EN MODE CRÉATION DE COMPTE ══════════ */}
+                {mode === "register" && (
+                  <motion.div
+                    key="register-fields"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 overflow-hidden"
+                  >
+                    {/* Nom et prénoms */}
+                    <div>
+                      <label
+                        htmlFor="continup-fullname"
+                        className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
+                      >
+                        Nom et Prénoms *
+                      </label>
+                      <div className="flex items-center gap-2 rounded-xl border border-line/80 bg-surface/60 px-3.5 py-2.5 focus-within:border-candle/50">
+                        <UserRound size={15} className="shrink-0 text-faint" />
+                        <input
+                          id="continup-fullname"
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Jean Dupont"
+                          autoComplete="name"
+                          className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Compte GitHub associé */}
+                    <div>
+                      <label
+                        htmlFor="continup-github-acc"
+                        className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
+                      >
+                        Compte GitHub associé *
+                      </label>
+                      <div className="flex items-center gap-2 rounded-xl border border-line/80 bg-surface/60 px-3.5 py-2.5 focus-within:border-candle/50">
+                        <Github size={15} className="shrink-0 text-faint" />
+                        <span className="text-[13.5px] text-faint font-mono">github.com/</span>
+                        <input
+                          id="continup-github-acc"
+                          type="text"
+                          value={githubAccount}
+                          onChange={(e) => setGithubAccount(e.target.value.replace(/\s/g, ""))}
+                          placeholder="ton-pseudo"
+                          className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ══════════ ADRESSE EMAIL (COMMUN AUX DEUX MODES) ══════════ */}
               <div>
                 <label
                   htmlFor="continup-email"
                   className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
                 >
-                  Adresse email
+                  Adresse Email *
                 </label>
-                <div
-                  className={cn(
-                    "flex items-center gap-2 rounded-xl border bg-surface/60 px-3.5 py-3 transition-colors",
-                    errors.email ? "border-ember/50" : "border-line/80"
-                  )}
-                >
+                <div className="flex items-center gap-2 rounded-xl border border-line/80 bg-surface/60 px-3.5 py-2.5 focus-within:border-candle/50">
                   <Mail size={15} className="shrink-0 text-faint" />
                   <input
                     id="continup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                     placeholder="toi@exemple.com"
                     autoComplete="email"
-                    className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none focus:ring-0"
+                    className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none"
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-1.5 text-[12px] text-ember">{errors.email}</p>
-                )}
               </div>
 
+              {/* ══════════ MOT DE PASSE (COMMUN AUX DEUX MODES) ══════════ */}
+              <div>
+                <label
+                  htmlFor="continup-password"
+                  className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink"
+                >
+                  {mode === "login" ? "Mot de passe *" : "Nouveau mot de passe *"}
+                </label>
+                <div className="flex items-center gap-2 rounded-xl border border-line/80 bg-surface/60 px-3.5 py-2.5 focus-within:border-candle/50">
+                  <Lock size={15} className="shrink-0 text-faint" />
+                  <input
+                    id="continup-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-faint hover:text-ink transition-colors p-1"
+                    title={showPassword ? "Masquer" : "Afficher"}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Bouton de Soumission */}
               <button
                 type="submit"
-                disabled={busy === "email" || !emailReady}
-                className="btn-primary w-full py-3"
+                disabled={busy || (mode === "login" ? !loginReady : !registerReady)}
+                className="btn-primary w-full py-3 mt-2"
               >
-                {busy === "email" ? (
+                {busy ? (
                   <Loader2 size={14} className="animate-spin" />
                 ) : (
                   <>
-                    Continuer avec mon email
+                    {mode === "login" ? "Se connecter" : "Créer mon compte"}
                     <ArrowRight size={14} />
                   </>
                 )}
               </button>
             </form>
 
-            <p className="mt-5 text-center text-[11.5px] leading-relaxed text-faint">
-              Aucun mot de passe à retenir. Ton projet t&apos;attend — même
-              s&apos;il dort depuis des semaines.
+            <p className="mt-5 text-center text-[12px] leading-relaxed text-faint">
+              {mode === "login" ? (
+                <>
+                  Pas encore de compte ?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("register")}
+                    className="font-semibold text-candle hover:underline"
+                  >
+                    Inscris-toi en 30 secondes
+                  </button>
+                </>
+              ) : (
+                <>
+                  Déjà un compte ?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("login")}
+                    className="font-semibold text-candle hover:underline"
+                  >
+                    Connecte-toi ici
+                  </button>
+                </>
+              )}
             </p>
           </div>
         </motion.div>

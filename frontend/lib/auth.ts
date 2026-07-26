@@ -73,14 +73,16 @@ async function readError(res: Response): Promise<string> {
 export async function registerAccount(input: {
   name: string;
   email: string;
+  github_username: string;
   password: string;
-}): Promise<void> {
+}): Promise<LoginResult> {
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new Error(await readError(res));
+  return (await res.json()) as LoginResult;
 }
 
 /** POST /api/auth/login */

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Flame, LayoutGrid, Trophy, ChevronDown, LogOut, User } from "lucide-react";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import { getStoredUser, logout, type AuthUser } from "@/lib/auth";
+import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -40,6 +40,7 @@ export default function TopBar({
   }, [profileOpen]);
 
   const handleLogout = () => {
+    logout();
     setProfileOpen(false);
     router.push("/login");
   };
@@ -139,7 +140,7 @@ export default function TopBar({
           </div>
           <button
             type="button"
-            onClick={onLogout}
+            onClick={handleLogout}
             className="hidden rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink sm:inline-flex"
             title="Se déconnecter"
             aria-label="Se déconnecter"
