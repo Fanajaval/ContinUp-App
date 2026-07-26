@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * ══════════════════════════════════════════════════════════════════
+ *  THÈMES — tokens en variables CSS (triplets RGB pour Tailwind).
+ *
+ *  Le thème SOMBRE est la racine : c'est le monde du produit
+ *  (la veillée, la bougie, le 4ᵉ jour). Le clair est une surcouche.
+ *
+ *  ⚠️ RÈGLE M4.7 : aucune variable rouge dans ce fichier, dans les
+ *  deux thèmes. Ne pas en ajouter.
+ * ══════════════════════════════════════════════════════════════════
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Fonds */
+  --c-night: 8 11 20;
+  --c-surface: 17 23 38;
+  --c-card: 20 27 43;
+  --c-line: 35 44 66;
+
+  /* Texte */
+  --c-ink: 238 242 250;
+  --c-muted: 141 151 175;
+  --c-faint: 90 100 128;
+
+  /* Bougie 🕯️ — la signature */
+  --c-candle: 245 184 65;
+  --c-candle-soft: 255 210 119;
+  --c-candle-deep: 217 146 43;
+
+  /* Progression 🔥 */
+  --c-grow: 74 222 155;
+  --c-grow-soft: 139 240 194;
+  --c-grow-deep: 34 169 111;
+
+  /* Silence 🌫 */
+  --c-mist: 124 147 184;
+  --c-mist-soft: 168 188 216;
+  --c-mist-deep: 68 85 122;
+
+  /* Achèvement 🏆 */
+  --c-gold: 255 210 119;
+  --c-gold-soft: 255 231 176;
+  --c-gold-deep: 199 154 62;
+
+  --c-ember: 232 134 60;
+
+  /* Halos */
+  --glow-candle: 245 184 65;
+  --glow-grow: 74 222 155;
+  --glow-gold: 255 210 119;
+  --glow-a: 0.45;
+  --glow-a-lg: 0.5;
+
+  /* ── LA SCÈNE DU RÊVE ──────────────────────────────────────
+     Toujours au crépuscule, dans les deux thèmes : une fenêtre
+     allumée n'existe pas en plein jour. Le thème clair l'éclaircit
+     juste assez pour qu'elle ne fasse pas un trou noir sur le papier. */
+  --sky-top: #0b1224;
+  --sky-mid: #141d33;
+  --sky-bottom: #1b2440;
+  --star-opacity: 0.22;
+  --ghost: #8d97af;
+  --ghost-opacity: 0.13;
+}
+
+.light {
+  color-scheme: light;
+
+  /* Fonds — papier chaud, jamais un blanc d'hôpital */
+  --c-night: 246 242 234;
+  --c-surface: 252 249 243;
+  --c-card: 255 255 255;
+  --c-line: 226 218 202;
+
+  /* Texte */
+  --c-ink: 26 31 46;
+  --c-muted: 92 101 119;
+  --c-faint: 134 143 161;
+
+  /* Accents assombris pour rester lisibles sur le papier */
+  --c-candle: 169 111 18;
+  --c-candle-soft: 196 136 27;
+  --c-candle-deep: 126 80 8;
+
+  --c-grow: 24 118 76;
+  --c-grow-soft: 46 149 101;
+  --c-grow-deep: 16 88 56;
+
+  --c-mist: 95 112 140;
+  --c-mist-soft: 128 145 172;
+  --c-mist-deep: 62 76 100;
+
+  --c-gold: 154 107 18;
+  --c-gold-soft: 190 141 44;
+  --c-gold-deep: 116 78 10;
+
+  --c-ember: 180 85 28;
+
+  /* Halos plus discrets sur fond clair */
+  --glow-candle: 214 154 46;
+  --glow-grow: 46 149 101;
+  --glow-gold: 190 141 44;
+  --glow-a: 0.3;
+  --glow-a-lg: 0.34;
+
+  /* Le rêve passe au crépuscule doux, pas au plein jour */
+  --sky-top: #1c2740;
+  --sky-mid: #26324e;
+  --sky-bottom: #34405f;
+  --star-opacity: 0.16;
+  --ghost: #b9c4d8;
+  --ghost-opacity: 0.18;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-night text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(900px 500px at 12% -8%, rgb(var(--glow-candle) / 0.07), transparent 60%),
+      radial-gradient(800px 460px at 88% 4%, rgb(var(--glow-grow) / 0.06), transparent 60%);
+    background-attachment: fixed;
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+  ::selection {
+    @apply bg-candle/30 text-ink;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-candle/60 ring-offset-2 ring-offset-night;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-line bg-card/80 backdrop-blur-sm;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line
+           bg-surface/70 px-3 py-1.5 text-sm text-muted transition-all
+           hover:border-candle/40 hover:text-ink;
+  }
+  .chip-on {
+    @apply border-candle/70 bg-candle/10 text-candle shadow-candle;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
+           text-sm font-medium transition-all disabled:opacity-50
+           disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-candle text-night hover:bg-candle-deep shadow-candle;
+  }
+  .btn-ghost {
+    @apply btn border border-line text-muted hover:text-ink hover:border-mist/50;
+  }
+  .label-xs {
+    @apply text-[11px] font-medium uppercase tracking-[0.14em] text-faint;
+  }
+  .shine {
+    background-image: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgb(var(--glow-gold) / 0.16) 45%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
