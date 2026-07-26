@@ -1,0 +1,119 @@
+{
+    "projectId": "mock-project",
+    "source": "mixte",
+    "docs_detectes": [
+        "README.md"
+    ],
+    "resume_projet": "aube-api regroupe 4 fichiers autour de Express, PostgreSQL, SQL. 6 \u00e9tapes sont d\u00e9j\u00e0 franchies : le chantier est bien r\u00e9el.",
+    "stack_detectee": [
+        "Express",
+        "PostgreSQL",
+        "SQL",
+        "TypeScript"
+    ],
+    "previously": {
+        "ou_tu_en_es": "Tu as pos\u00e9 6 jalons sur ce projet. Le code est l\u00e0, lisible, et il t'attend exactement o\u00f9 tu l'as laiss\u00e9.",
+        "ou_tu_tes_arrete": "Ton dernier point de contact se situe du c\u00f4t\u00e9 de src/routes/project.ts.",
+        "prochaine_action": "Rouvrir src/routes/project.ts et faire avancer d'un cran la fonction sur laquelle tu t'\u00e9tais arr\u00eat\u00e9.",
+        "prochaine_action_duree_min": 20,
+        "point_de_reprise": "src/routes/project.ts"
+    },
+    "tasks": [
+        {
+            "label": "Poser le cadre du projet dans le README",
+            "poids": 1,
+            "done": true,
+            "etape_template": "terrain",
+            "duree_estimee_min": 20,
+            "preuve": "README pr\u00e9sent (README.md)"
+        },
+        {
+            "label": "Choisir et installer la stack technique",
+            "poids": 2,
+            "done": true,
+            "etape_template": "terrain",
+            "duree_estimee_min": 30,
+            "preuve": "stack d\u00e9tect\u00e9e : Express, PostgreSQL, SQL, TypeScript"
+        },
+        {
+            "label": "D\u00e9finir le sch\u00e9ma de donn\u00e9es",
+            "poids": 3,
+            "done": true,
+            "etape_template": "fondations",
+            "duree_estimee_min": 60,
+            "preuve": "fichiers de sch\u00e9ma/migration pr\u00e9sents"
+        },
+        {
+            "label": "Mettre en place la connexion \u00e0 la base",
+            "poids": 2,
+            "done": true,
+            "etape_template": "fondations",
+            "duree_estimee_min": 40,
+            "preuve": "acc\u00e8s BDD rep\u00e9r\u00e9 dans le d\u00e9p\u00f4t"
+        },
+        {
+            "label": "\u00c9crire la logique m\u00e9tier principale",
+            "poids": 4,
+            "done": true,
+            "etape_template": "murs",
+            "duree_estimee_min": 120,
+            "preuve": "services/routes rep\u00e9r\u00e9s"
+        },
+        {
+            "label": "Exposer les routes de l'API",
+            "poids": 3,
+            "done": true,
+            "etape_template": "murs",
+            "duree_estimee_min": 60,
+            "preuve": "fichiers de routes pr\u00e9sents"
+        },
+        {
+            "label": "Relier le front et le back sur le parcours principal",
+            "poids": 3,
+            "done": false,
+            "etape_template": "toit",
+            "duree_estimee_min": 90
+        },
+        {
+            "label": "Construire les \u00e9crans principaux",
+            "poids": 3,
+            "done": false,
+            "etape_template": "fenetres",
+            "duree_estimee_min": 90
+        },
+        {
+            "label": "Soigner l'entr\u00e9e dans l'application",
+            "poids": 2,
+            "done": false,
+            "etape_template": "porte",
+            "duree_estimee_min": 45
+        },
+        {
+            "label": "\u00c9crire quelques tests sur le c\u0153ur du projet",
+            "poids": 2,
+            "done": false,
+            "etape_template": "jardin",
+            "duree_estimee_min": 60
+        },
+        {
+            "label": "Documenter la reprise du projet pour plus tard",
+            "poids": 1,
+            "done": false,
+            "etape_template": "jardin",
+            "duree_estimee_min": 25
+        },
+        {
+            "label": "Mettre le projet en ligne",
+            "poids": 3,
+            "done": false,
+            "etape_template": "emmenagement",
+            "duree_estimee_min": 60
+        }
+    ],
+    "progression": 52,
+    "etape_courante": "toit",
+    "etape_libelle": "Toit pos\u00e9",
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.479Z"
+}

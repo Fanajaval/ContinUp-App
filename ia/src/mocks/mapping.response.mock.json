@@ -1,0 +1,85 @@
+{
+    "projectId": "mock-project",
+    "templateType": "maison",
+    "tasks": [
+        {
+            "label": "Cr\u00e9er le sch\u00e9ma SQL",
+            "etape_template": "fondations",
+            "poids": 3,
+            "done": true,
+            "raison": "socle de donn\u00e9es"
+        },
+        {
+            "label": "\u00c9crire l'endpoint de cr\u00e9ation",
+            "etape_template": "murs",
+            "poids": 3,
+            "done": false,
+            "raison": "logique m\u00e9tier"
+        },
+        {
+            "label": "Styliser la card du dashboard",
+            "etape_template": "fenetres",
+            "poids": 2,
+            "done": false,
+            "raison": "interface visible"
+        },
+        {
+            "label": "D\u00e9ployer sur Vercel",
+            "etape_template": "emmenagement",
+            "poids": 3,
+            "done": false,
+            "raison": "mise en service"
+        }
+    ],
+    "progression": 27,
+    "etape_courante": "murs",
+    "etape_libelle": "Murs mont\u00e9s",
+    "etapes_debloquees": [
+        "fondations"
+    ],
+    "taches_avant_prochaine_etape": 1,
+    "cached": false,
+    "degraded": true,
+    "calques": [
+        {
+            "etape": "terrain",
+            "libelle": "Terrain rep\u00e9r\u00e9",
+            "visible": false
+        },
+        {
+            "etape": "fondations",
+            "libelle": "Fondations coul\u00e9es",
+            "visible": true
+        },
+        {
+            "etape": "murs",
+            "libelle": "Murs mont\u00e9s",
+            "visible": false
+        },
+        {
+            "etape": "toit",
+            "libelle": "Toit pos\u00e9",
+            "visible": false
+        },
+        {
+            "etape": "fenetres",
+            "libelle": "Fen\u00eatres install\u00e9es",
+            "visible": false
+        },
+        {
+            "etape": "porte",
+            "libelle": "Porte pos\u00e9e",
+            "visible": false
+        },
+        {
+            "etape": "jardin",
+            "libelle": "Jardin plant\u00e9",
+            "visible": false
+        },
+        {
+            "etape": "emmenagement",
+            "libelle": "Emm\u00e9nagement",
+            "visible": false
+        }
+    ]
+}
