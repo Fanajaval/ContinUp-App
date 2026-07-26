@@ -11,7 +11,7 @@ import TopBar from "@/components/layout/TopBar";
 /**
  * M6.4 — PAGE CLASSEMENT.
  *
- * ⚠️ POINT DE FRICTION AVEC LE SUJET (cf. risque n°1 du CDC).
+ * POINT DE FRICTION AVEC LE SUJET (cf. risque n°1 du CDC).
  * Le design DOIT rendre évident qu'on ne classe pas le volume produit :
  * la colonne mise en avant est « retours » — le nombre de fois où
  * quelqu'un est revenu après un silence. Le n°1 est le plus résilient,
