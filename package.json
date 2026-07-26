@@ -1,0 +1,13 @@
+{
+  "name": "restart",
+  "private": true,
+  "description": "ReStart monorepo — backend Auth + service IA",
+  "scripts": {
+    "dev:ia": "npm run dev --prefix ia",
+    "dev:backend": "npm run dev --prefix backend",
+    "smoke": "npm run smoke --prefix ia",
+    "test:ia": "npm test --prefix ia",
+    "db:migrate:ia": "npm run db:migrate --prefix ia",
+    "db:seed:ia": "npm run db:seed --prefix ia"
+  }
+}
