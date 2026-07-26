@@ -8,8 +8,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({ message: "Backend restart fonctionne correctement" });
+});
+
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", message: "API Le Quatrième Jour" });
+  res.json({ status: "ok", message: "Backend restart fonctionne correctement" });
 });
 
 app.use("/api/auth", authRoutes);

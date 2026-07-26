@@ -1,0 +1,330 @@
+{
+  "S1_sarcastique": {
+    "projectId": "mock-project",
+    "declencheur": "S1",
+    "style": "sarcastique",
+    "titre": "Tiens, fondations coulées — qui l'eût cru",
+    "corps": "Alors comme ça on commite. 45 % du rêve est construit : les fondations sont coulées. Ta maison a gagné un morceau pendant que tu regardais ailleurs. Prochaine pierre si le cœur t'en dit : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Voir le chantier",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S1",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.636Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S1_motivant": {
+    "projectId": "mock-project",
+    "declencheur": "S1",
+    "style": "motivant",
+    "titre": "Fondations coulées ✓",
+    "corps": "Quelque chose de ta maison vient d'apparaître. 45 % du rêve est construit : les fondations sont coulées. C'est exactement comme ça que ça se construit : un morceau après l'autre. Quand tu veux : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Continuer",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S1",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.649Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S1_epique": {
+    "projectId": "mock-project",
+    "declencheur": "S1",
+    "style": "epique",
+    "titre": "Fondations coulées — la pierre tient",
+    "corps": "Un fragment de plus se dresse. 45 % du rêve est construit : les fondations sont coulées. Ta maison prend forme, pierre après pierre, dans le bruit discret de tes commits. La suite t'attend : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Poursuivre",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S1",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.662Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S1_gamer": {
+    "projectId": "mock-project",
+    "declencheur": "S1",
+    "style": "gamer",
+    "titre": "+XP · Fondations coulées",
+    "corps": "Brique posée, checkpoint enregistré. 45 % du rêve est construit : les fondations sont coulées. Ta maison est à 45 % — fondations coulées. Quête suivante (20 min) : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Lancer la quête",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S1",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.674Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S3_sarcastique": {
+    "projectId": "mock-project",
+    "declencheur": "S3",
+    "style": "sarcastique",
+    "titre": "Ta maison tient toujours debout",
+    "corps": "Petite nouvelle : rien ne s'est écroulé. 45 % du rêve est construit : les fondations sont coulées. Tout est resté exactement là où tu l'as laissé, avec une patience assez remarquable. Si tu passes dans le coin, il y a ça à faire, ça prend 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Et sinon, ça attendra encore très bien.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Jeter un œil",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S3",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.689Z",
+    "email_subject": "Ta maison tient toujours debout",
+    "email_body": "Petite nouvelle : rien ne s'est écroulé. 45 % du rêve est construit : les fondations sont coulées. Tout est resté exactement là où tu l'as laissé, avec une patience assez remarquable. Si tu passes dans le coin, il y a ça à faire, ça prend 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Et sinon, ça attendra encore très bien.\n\n──────────────────────────────\n📍 Où en est ton rêve : 45 % — Fondations coulées\n🧱 Ce qui existe déjà : 45 % du rêve est construit : les fondations sont coulées.\n🎯 Une seule chose, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.\n\n👉 Jeter un œil : http://localhost:3000/projet/mock-project?from=signal&d=S3\n──────────────────────────────\n\nTu peux aussi ne rien faire aujourd'hui. Ton chantier ne bougera pas d'un centimètre, il t'attend.\n\nLe Quatrième Jour",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S3_motivant": {
+    "projectId": "mock-project",
+    "declencheur": "S3",
+    "style": "motivant",
+    "titre": "Ce que tu as construit est toujours là",
+    "corps": "Une pause, ça arrive. Ce qui compte, c'est ce qui reste — et il reste beaucoup. 45 % du rêve est construit : les fondations sont coulées. La plupart des projets ne dépassent jamais ce point : le tien l'a dépassé. Pour reprendre le fil, une seule chose suffit, environ 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Rien de plus. Le reste suivra tout seul.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Reprendre le fil",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S3",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.701Z",
+    "email_subject": "Ce que tu as construit est toujours là",
+    "email_body": "Une pause, ça arrive. Ce qui compte, c'est ce qui reste — et il reste beaucoup. 45 % du rêve est construit : les fondations sont coulées. La plupart des projets ne dépassent jamais ce point : le tien l'a dépassé. Pour reprendre le fil, une seule chose suffit, environ 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Rien de plus. Le reste suivra tout seul.\n\n──────────────────────────────\n📍 Où en est ton rêve : 45 % — Fondations coulées\n🧱 Ce qui existe déjà : 45 % du rêve est construit : les fondations sont coulées.\n🎯 Une seule chose, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.\n\n👉 Reprendre le fil : http://localhost:3000/projet/mock-project?from=signal&d=S3\n──────────────────────────────\n\nTu peux aussi ne rien faire aujourd'hui. Ton chantier ne bougera pas d'un centimètre, il t'attend.\n\nLe Quatrième Jour",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S3_epique": {
+    "projectId": "mock-project",
+    "declencheur": "S3",
+    "style": "epique",
+    "titre": "Le chantier veille",
+    "corps": "Le silence est tombé sur le chantier, mais rien n'a bougé. 45 % du rêve est construit : les fondations sont coulées. Les murs tiennent. La lumière est restée allumée à la fenêtre. Il ne manque qu'un geste, un seul, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Et ta maison reprendra sa marche.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Rallumer le chantier",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S3",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.715Z",
+    "email_subject": "Le chantier veille",
+    "email_body": "Le silence est tombé sur le chantier, mais rien n'a bougé. 45 % du rêve est construit : les fondations sont coulées. Les murs tiennent. La lumière est restée allumée à la fenêtre. Il ne manque qu'un geste, un seul, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Et ta maison reprendra sa marche.\n\n──────────────────────────────\n📍 Où en est ton rêve : 45 % — Fondations coulées\n🧱 Ce qui existe déjà : 45 % du rêve est construit : les fondations sont coulées.\n🎯 Une seule chose, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.\n\n👉 Rallumer le chantier : http://localhost:3000/projet/mock-project?from=signal&d=S3\n──────────────────────────────\n\nTu peux aussi ne rien faire aujourd'hui. Ton chantier ne bougera pas d'un centimètre, il t'attend.\n\nLe Quatrième Jour",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S3_gamer": {
+    "projectId": "mock-project",
+    "declencheur": "S3",
+    "style": "gamer",
+    "titre": "Sauvegarde intacte · 45 %",
+    "corps": "Ta partie est sauvegardée, rien n'est perdu. 45 % du rêve est construit : les fondations sont coulées. Ta maison est à 45 % — fondations coulées. Quête courte disponible, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Aucune pénalité, aucun compteur : la sauvegarde t'attend.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Charger la partie",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S3",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.727Z",
+    "email_subject": "Sauvegarde intacte · 45 %",
+    "email_body": "Ta partie est sauvegardée, rien n'est perdu. 45 % du rêve est construit : les fondations sont coulées. Ta maison est à 45 % — fondations coulées. Quête courte disponible, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST. Aucune pénalité, aucun compteur : la sauvegarde t'attend.\n\n──────────────────────────────\n📍 Où en est ton rêve : 45 % — Fondations coulées\n🧱 Ce qui existe déjà : 45 % du rêve est construit : les fondations sont coulées.\n🎯 Une seule chose, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.\n\n👉 Charger la partie : http://localhost:3000/projet/mock-project?from=signal&d=S3\n──────────────────────────────\n\nTu peux aussi ne rien faire aujourd'hui. Ton chantier ne bougera pas d'un centimètre, il t'attend.\n\nLe Quatrième Jour",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S5_sarcastique": {
+    "projectId": "mock-project",
+    "declencheur": "S5",
+    "style": "sarcastique",
+    "titre": "Bon. On reprend.",
+    "corps": "Te voilà. 45 % du rêve est construit : les fondations sont coulées. On ne va pas en faire tout un plat : il y a ta maison à construire. Première prise, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "C'est parti",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S5",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.741Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S5_motivant": {
+    "projectId": "mock-project",
+    "declencheur": "S5",
+    "style": "motivant",
+    "titre": "Revenir, c'est le plus dur — c'est fait 🎉",
+    "corps": "Tu es là, et c'est exactement ce qui compte. 45 % du rêve est construit : les fondations sont coulées. Ta maison n'a rien perdu. Une petite prise pour se remettre en jambes, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Reprendre",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S5",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.754Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S5_epique": {
+    "projectId": "mock-project",
+    "declencheur": "S5",
+    "style": "epique",
+    "titre": "Le bâtisseur est de retour",
+    "corps": "La porte s'ouvre, la poussière retombe. 45 % du rêve est construit : les fondations sont coulées. Ta maison n'attendait que ça. Reprends par là, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Reprendre le chantier",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S5",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.767Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S5_gamer": {
+    "projectId": "mock-project",
+    "declencheur": "S5",
+    "style": "gamer",
+    "titre": "Reconnexion réussie · +XP retour",
+    "corps": "Joueur de retour, sauvegarde chargée, exploit débloqué. 45 % du rêve est construit : les fondations sont coulées. Ta maison est à 45 %. Quête de reprise, 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Reprendre la run",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S5",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.779Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S6_sarcastique": {
+    "projectId": "mock-project",
+    "declencheur": "S6",
+    "style": "sarcastique",
+    "titre": "Il manque une pierre. Une.",
+    "corps": "C'est presque insultant tellement c'est proche. 45 % du rêve est construit : les fondations sont coulées. Encore un geste et voilà les murs à l'écran. 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Finir ça",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S6",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.791Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S6_motivant": {
+    "projectId": "mock-project",
+    "declencheur": "S6",
+    "style": "motivant",
+    "titre": "Plus qu'une étape avant les murs",
+    "corps": "45 % du rêve est construit : les fondations sont coulées. Tu es à une tâche de voir apparaître les murs sur ta maison. 20 minutes suffisent : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Débloquer",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S6",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.805Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S6_epique": {
+    "projectId": "mock-project",
+    "declencheur": "S6",
+    "style": "epique",
+    "titre": "Une pierre avant les murs",
+    "corps": "Tout est en place. 45 % du rêve est construit : les fondations sont coulées. Il ne reste qu'un geste avant de dresser les murs sur ta maison. 20 minutes : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Poser la dernière pierre",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S6",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.818Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  },
+  "S6_gamer": {
+    "projectId": "mock-project",
+    "declencheur": "S6",
+    "style": "gamer",
+    "titre": "Palier à 1 quête · les murs",
+    "corps": "Déblocage imminent. 45 % du rêve est construit : les fondations sont coulées. Encore une quête et tu débloques les murs sur ta maison. Durée estimée 20 min : Rouvrir src/routes/project.ts et écrire la route POST.",
+    "preuve_de_progres": "45 % du rêve est construit : les fondations sont coulées.",
+    "micro_action": "Rouvrir src/routes/project.ts et écrire la route POST.",
+    "micro_action_duree_min": 20,
+    "cta_label": "Débloquer le palier",
+    "cta_url": "http://localhost:3000/projet/mock-project?from=signal&d=S6",
+    "regle_dor_ok": true,
+    "cached": false,
+    "degraded": true,
+    "generated_at": "2026-07-26T07:44:24.831Z",
+    "audit": {
+      "ok": true,
+      "violations": []
+    }
+  }
+}

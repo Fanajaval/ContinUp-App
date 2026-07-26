@@ -1,0 +1,58 @@
+{
+    "userId": "mock-user",
+    "reves": [
+        {
+            "label": "une maison \u00e0 moi",
+            "label_normalise": "Une maison \u00e0 moi",
+            "categorie": "habitat",
+            "poids_de_reve": 70,
+            "template_type": "maison",
+            "vocabulaire": [
+                "toit",
+                "murs",
+                "cl\u00e9s",
+                "seuil",
+                "fen\u00eatres"
+            ]
+        },
+        {
+            "label": "un centre d'aide pour le quartier",
+            "label_normalise": "Un centre d'aide pour le quartier",
+            "categorie": "impact_social",
+            "poids_de_reve": 90,
+            "template_type": "centre_aide",
+            "vocabulaire": [
+                "accueil",
+                "portes ouvertes",
+                "premi\u00e8re personne aid\u00e9e"
+            ]
+        },
+        {
+            "label": "ma premi\u00e8re voiture",
+            "label_normalise": "Ma premi\u00e8re voiture",
+            "categorie": "mobilite",
+            "poids_de_reve": 40,
+            "template_type": "voiture",
+            "vocabulaire": [
+                "moteur",
+                "carrosserie",
+                "volant",
+                "premi\u00e8re route"
+            ]
+        },
+        {
+            "label": "publier mon jeu vid\u00e9o",
+            "label_normalise": "Publier mon jeu vid\u00e9o",
+            "categorie": "creation",
+            "poids_de_reve": 50,
+            "template_type": "generique",
+            "vocabulaire": [
+                "premi\u00e8re page",
+                "structure",
+                "derni\u00e8re page"
+            ]
+        }
+    ],
+    "cached": false,
+    "degraded": true
+}
