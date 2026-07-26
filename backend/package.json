@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "Backend Le Quatrième Jour - Module Base de données + Modèle Utilisateur",
+  "description": "Backend ReStart - Module Base de données + Modèle Utilisateur",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

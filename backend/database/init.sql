@@ -1,5 +1,5 @@
 -- =====================================================
--- Le Quatrième Jour - Database initialization
+-- ReStart - Database initialization
 -- Module: Users
 -- =====================================================
 

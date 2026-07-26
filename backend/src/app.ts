@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 // Health-check / smoke-test route
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
-    message: "Backend Le Quatrième Jour fonctionne correctement",
+    message: "Backend restart fonctionne correctement",
   });
 });
 
