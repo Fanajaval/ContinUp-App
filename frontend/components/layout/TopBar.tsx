@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Flame, LayoutGrid, Trophy, ChevronDown, LogOut, User } from "lucide-react";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import { getStoredUser, logout, type AuthUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -49,7 +50,7 @@ export default function TopBar({
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg">🕯️</span>
           <span className="font-display text-[15px] font-bold tracking-tight">
-            Le Quatrième Jour
+            ContinUp
           </span>
         </Link>
 
@@ -136,6 +137,15 @@ export default function TopBar({
               </div>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="hidden rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink sm:inline-flex"
+            title="Se déconnecter"
+            aria-label="Se déconnecter"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
     </header>

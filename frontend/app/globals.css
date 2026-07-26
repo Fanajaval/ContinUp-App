@@ -121,20 +121,41 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   body {
     @apply bg-night text-ink font-sans antialiased;
+    font-feature-settings: "ss01" on, "cv11" on;
+    letter-spacing: -0.011em;
     background-image:
       radial-gradient(900px 500px at 12% -8%, rgb(var(--glow-candle) / 0.07), transparent 60%),
       radial-gradient(800px 460px at 88% 4%, rgb(var(--glow-grow) / 0.06), transparent 60%);
     background-attachment: fixed;
     transition: background-color 0.35s ease, color 0.35s ease;
   }
+  .font-display {
+    letter-spacing: -0.02em;
+  }
   ::selection {
     @apply bg-candle/30 text-ink;
   }
   :focus-visible {
     @apply outline-none ring-2 ring-candle/60 ring-offset-2 ring-offset-night;
+  }
+  /* Champs de formulaire : pas de cadre / ring au focus */
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+  input,
+  textarea,
+  button {
+    font: inherit;
   }
 }
 

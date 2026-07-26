@@ -1,13 +1,32 @@
 import type { Metadata } from "next";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider, THEME_SCRIPT } from "@/components/theme/ThemeProvider";
 import { UiToastProvider } from "@/components/ui/ToastProvider";
 import { ToastProvider } from "@/components/signal/ToastProvider";
 
+/**
+ * Plus Jakarta Sans : UI moderne, lisible, plus chaleureuse qu'Inter.
+ * Fraunces : titres / marque (déjà la signature du produit).
+ */
+const fontSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const fontDisplay = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Le Quatrième Jour — ton repo construit ta vie rêvée",
+  title: "ContinUp — reprends là où tu t'étais arrêté",
   description:
-    "Ton activité Git fait construire ton rêve. Et quand tu te tais, c'est l'app qui parle.",
+    "ContinUp redonne l'élan de continuer un projet oublié. Ton repo Git devient une progression visible.",
 };
 
 export default function RootLayout({
@@ -16,22 +35,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html
+      lang="fr"
+      suppressHydrationWarning
+      className={`${fontSans.variable} ${fontDisplay.variable}`}
+    >
       <head>
         {/* Anti-flash : pose la classe de thème avant la première peinture */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap"
-          rel="stylesheet"
-        />
       </head>
-      <body>
+      <body className="font-sans">
         <ThemeProvider>
           <UiToastProvider>
-            {/* Les Signaux sont la pile la plus proche du contenu :
-                ils ne doivent jamais être masqués par un toast système. */}
             <ToastProvider>{children}</ToastProvider>
           </UiToastProvider>
         </ThemeProvider>
