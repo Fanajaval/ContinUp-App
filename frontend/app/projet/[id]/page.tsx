@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   Circle,
@@ -77,6 +78,7 @@ function getTechStepLabel(repoNom: string, etapeId: string, hint: string): strin
 
 export default function ProjetPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [projet, setProjet] = useState<Project | null>(null);
   const [sync, setSync] = useState(false);
@@ -182,7 +184,18 @@ export default function ProjetPage() {
         )}
       </AnimatePresence>
 
-      <main className="mx-auto max-w-5xl px-5 py-7">
+      <main className="mx-auto max-w-5xl px-5 py-6">
+        {/* ── Bouton de retour ───────────────────────────────────── */}
+        <div className="mb-5">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="btn-ghost group inline-flex items-center gap-2 px-3 py-1.5 text-xs text-muted hover:text-ink transition-colors"
+          >
+            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
+            Retour au tableau de bord
+          </button>
+        </div>
+
         <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
           {/* ── Le rêve en grand ──────────────────────────────── */}
           <div>
