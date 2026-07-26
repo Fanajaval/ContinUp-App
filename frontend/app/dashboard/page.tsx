@@ -52,8 +52,16 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { push } = useToast();
 
+  async function refreshDashboard() {
+    try {
+      setData(await getDashboard());
+    } catch {
+      setData(null);
+    }
+  }
+
   useEffect(() => {
-    getDashboard().then(setData);
+    refreshDashboard();
   }, []);
 
   const projets = useMemo(() => {
@@ -226,7 +234,10 @@ export default function DashboardPage() {
       {/* Pop-up Modale d'Onboarding */}
       <OnboardingModal
         isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
+        onClose={() => {
+          setShowOnboarding(false);
+          refreshDashboard();
+        }}
       />
     </div>
   );

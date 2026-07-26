@@ -11,12 +11,13 @@ import {
   DashboardResponseSchema,
   type ClassementLigne,
   type DashboardResponse,
+  type Project,
 } from "./contracts";
-import { MOCK_CLASSEMENT, MOCK_DASHBOARD } from "./mock";
+import { MOCK_CLASSEMENT } from "./mock";
 import { authHeaders, getStoredUser } from "./auth";
 import { z } from "zod";
 
-const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS !== "false";
+const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 
 async function safeGet<T>(
   url: string,
@@ -43,7 +44,68 @@ async function safeGet<T>(
 }
 
 export function getDashboard(): Promise<DashboardResponse> {
-  return safeGet("/api/dashboard", DashboardResponseSchema, MOCK_DASHBOARD);
+  return fetch("/api/dashboard", {
+    cache: "no-store",
+    headers: authHeaders(),
+  })
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const parsed = DashboardResponseSchema.safeParse(data);
+      if (!parsed.success) throw new Error("Réponse dashboard invalide");
+      return parsed.data;
+    });
+}
+
+export async function createProject(input: {
+  repo_url: string;
+  dreams: string[];
+  selected_dream: string;
+  template_type: string;
+}): Promise<Project> {
+  const res = await fetch("/api/projects", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || "Impossible de créer le chantier");
+  }
+  const body = await res.json();
+  return body.project as Project;
+}
+
+export type ProjectAnalysis = {
+  objectif: string | null;
+  tasks: Array<{
+    label: string;
+    poids: number;
+    done: boolean;
+    etape_template: string;
+    duree_estimee_min?: number;
+    preuve?: string;
+  }>;
+  analyzed_at: string | null;
+  degraded: boolean;
+};
+
+export async function getProjectAnalysis(projectId: string): Promise<ProjectAnalysis | null> {
+  const res = await fetch(`/api/projects/${projectId}/analysis`, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) throw new Error("Impossible de lire l'analyse du chantier");
+  const body = await res.json();
+  return body.analysis as ProjectAnalysis | null;
+}
+
+export async function analyzeProject(projectId: string, force = false): Promise<ProjectAnalysis> {
+  const res = await fetch(`/api/projects/${projectId}/analyze`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ force }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || "Impossible d'analyser ce dépôt");
+  return body.analysis as ProjectAnalysis;
 }
 
 export function getClassement(): Promise<ClassementLigne[]> {

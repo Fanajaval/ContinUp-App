@@ -14,7 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { DashboardResponse, Project } from "@/lib/contracts";
-import { getDashboard, syncProjet } from "@/lib/api";
+import { analyzeProject, getDashboard, getProjectAnalysis, syncProjet, type ProjectAnalysis } from "@/lib/api";
 import { getTemplate, prochaineEtape } from "@/lib/templates";
 import { cn, depuis } from "@/lib/utils";
 import TopBar from "@/components/layout/TopBar";
@@ -81,6 +81,9 @@ export default function ProjetPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [projet, setProjet] = useState<Project | null>(null);
+  const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
   const [sync, setSync] = useState(false);
   const [retour, setRetour] = useState(false);
   const [vueEtape, setVueEtape] = useState<"cote_a_cote" | "projet" | "metaphore">("cote_a_cote");
@@ -92,6 +95,7 @@ export default function ProjetPage() {
       setData(d);
       const p = d.projects.find((x) => x.id === id) ?? d.projects[0];
       setProjet(p);
+      if (p) getProjectAnalysis(p.id).then(setAnalysis).catch(() => undefined);
 
       // ── S5 : célébration du retour ──────────────────────────
       if (p?.statut === "silencieux" && !dejaCelebre.current) {
@@ -110,6 +114,23 @@ export default function ProjetPage() {
       }
     });
   }, [id, push]);
+
+  async function handleAnalyze(force = false) {
+    if (!projet) return;
+    setAnalyzing(true);
+    setAnalysisError("");
+    try {
+      const result = await analyzeProject(projet.id, force);
+      setAnalysis(result);
+      const refreshed = await getDashboard();
+      setData(refreshed);
+      setProjet(refreshed.projects.find((item) => item.id === projet.id) ?? projet);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "Analyse indisponible");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   async function handleSync() {
     if (!projet || !data) return;
@@ -328,6 +349,64 @@ export default function ProjetPage() {
                 </div>
               </div>
 
+              {analysis?.objectif && (
+                <p className="mb-3 rounded-lg border border-line/60 bg-surface/40 p-2.5 text-[12px] leading-relaxed text-muted">
+                  <span className="font-semibold text-ink">Objectif détecté :</span> {analysis.objectif}
+                </p>
+              )}
+              {analysisError && <p className="mb-3 text-[12px] text-candle">{analysisError}</p>}
+              <button
+                onClick={() => handleAnalyze(Boolean(analysis))}
+                disabled={analyzing}
+                className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-candle hover:text-ink disabled:opacity-60"
+              >
+                {analyzing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                {analysis ? "Actualiser l'analyse du dépôt" : "Analyser ce dépôt avec l'IA"}
+              </button>
+
+              {analysis?.tasks.length ? (
+                <ol className="space-y-3">
+                  {analysis.tasks.map((task, index) => {
+                    const fait = task.done;
+                    const cible = !fait && !analysis.tasks.slice(0, index).some((item) => !item.done);
+                    const dreamStep = tpl.etapes.find((step) => step.id === task.etape_template);
+                    return (
+                      <li
+                        key={`${task.etape_template}-${task.label}-${index}`}
+                        className={cn(
+                          "rounded-xl border p-2.5 transition-all",
+                          fait ? "border-grow/30 bg-grow/[0.04]" : cible ? "border-candle/50 bg-candle/[0.07] shadow-candle" : "border-line/60 bg-surface/30 opacity-75"
+                        )}
+                      >
+                        <div className="flex items-start gap-2">
+                          {fait ? <Check size={15} className="mt-0.5 shrink-0 text-grow" strokeWidth={3} /> : <Circle size={15} className={cn("mt-0.5 shrink-0", cible ? "text-candle animate-pulse" : "text-faint")} />}
+                          <div className="min-w-0 flex-1">
+                            {vueEtape !== "metaphore" && (
+                              <p className={cn("text-[12.5px] font-semibold", fait ? "text-ink" : cible ? "text-candle" : "text-faint")}>
+                                💻 {index + 1}. {task.label}
+                              </p>
+                            )}
+                            {vueEtape === "cote_a_cote" && dreamStep && (
+                              <p className="mt-1 border-t border-line/40 pt-1 text-[11.5px] text-muted">
+                                <span className="text-candle/80">Illustration Rêve :</span> {dreamStep.label}
+                              </p>
+                            )}
+                            {vueEtape === "metaphore" && (
+                              <p className={cn("text-[13px] font-semibold", fait ? "text-ink" : cible ? "text-candle" : "text-faint")}>
+                                {tpl.emoji} {dreamStep?.label ?? "Étape du rêve"}
+                              </p>
+                            )}
+                            {vueEtape === "projet" && task.preuve && (
+                              <p className="mt-0.5 text-[11px] text-faint">{fait ? `Preuve : ${task.preuve}` : "À réaliser"}</p>
+                            )}
+                            {cible && <span className="mt-1 inline-block rounded bg-candle/20 px-1.5 py-0.5 text-[9.5px] font-bold uppercase text-candle">En cours</span>}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
               <ol className="space-y-3">
                 {tpl.etapes.map((e, index) => {
                   const fait = projet.etapes_done.includes(e.id);
@@ -426,6 +505,7 @@ export default function ProjetPage() {
                   );
                 })}
               </ol>
+              )}
             </div>
 
             {events.length > 0 && (

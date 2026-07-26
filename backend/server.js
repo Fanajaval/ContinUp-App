@@ -4,6 +4,8 @@ require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 const app = require("./app");
 const sequelize = require("./config/database");
 require("./models/User");
+require("./models/Reve");
+require("./models/Project");
 
 const PORT = process.env.PORT || 5000;
 
@@ -27,6 +29,10 @@ async function startServer() {
     await sequelize.query(
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
     );
+    await sequelize.query("ALTER TABLE projects ADD COLUMN IF NOT EXISTS objectif TEXT");
+    await sequelize.query("ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_tasks JSONB NOT NULL DEFAULT '[]'::jsonb");
+    await sequelize.query("ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_analyzed_at TIMESTAMP");
+    await sequelize.query("ALTER TABLE projects ADD COLUMN IF NOT EXISTS ai_degraded BOOLEAN NOT NULL DEFAULT FALSE");
     console.log("✅ Modèles synchronisés");
 
     app.listen(PORT, () => {

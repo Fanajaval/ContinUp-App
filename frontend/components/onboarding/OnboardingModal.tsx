@@ -17,6 +17,7 @@ import type { StyleSignal, TemplateType } from "@/lib/contracts";
 import { PREVIEW_S3, STYLE_META } from "@/lib/mock";
 import { TEMPLATES } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import { analyzeProject, createProject } from "@/lib/api";
 import DreamProgress from "@/components/dream/DreamProgress";
 
 const CHIPS: { label: string; template: TemplateType }[] = [
@@ -49,6 +50,7 @@ export default function OnboardingModal({
   const [style, setStyle] = useState<StyleSignal>("motivant");
   const [reveChoisi, setReveChoisi] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
 
   // Sélectionne par défaut le premier rêve ajouté si aucun n'est encore choisi
   useEffect(() => {
@@ -91,12 +93,26 @@ export default function OnboardingModal({
 
   async function terminer() {
     setEnvoi(true);
-    await new Promise((r) => setTimeout(r, 1100));
-    setEnvoi(false);
-    if (onClose) {
-      onClose();
-    } else {
-      router.push("/dashboard");
+    setErreur("");
+    try {
+      const project = await createProject({
+        repo_url: repo.trim(),
+        dreams: reves,
+        selected_dream: reveChoisi || "",
+        template_type: templateDe(reveChoisi || ""),
+      });
+      // L'analyse est volontairement best-effort : la création du chantier
+      // reste possible même si le service IA est temporairement arrêté.
+      await analyzeProject(project.id).catch(() => undefined);
+      if (onClose) {
+        onClose();
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "Impossible de créer le chantier");
+    } finally {
+      setEnvoi(false);
     }
   }
 
@@ -342,6 +358,7 @@ export default function OnboardingModal({
                   </motion.p>
                 </AnimatePresence>
               </div>
+              {erreur && <p className="mt-3 text-sm text-ember">{erreur}</p>}
             </motion.div>
           )}
         </AnimatePresence>
