@@ -1,3 +1,11 @@
+/**
+ * Couche d'accès front → backends.
+ *
+ * - Auth / health : toujours le backend Express (:5000) via rewrite Next
+ * - Dashboard / classement / sync : mocks par défaut tant que C n'a pas livré
+ * - IA (:4000) : optionnelle, via rewrite `/api/ia/*`
+ */
+
 import {
   ClassementLigneSchema,
   DashboardResponseSchema,
@@ -5,18 +13,8 @@ import {
   type DashboardResponse,
 } from "./contracts";
 import { MOCK_CLASSEMENT, MOCK_DASHBOARD } from "./mock";
+import { authHeaders, getStoredUser } from "./auth";
 import { z } from "zod";
-
-/**
- * COUCHE D'ACCÈS — le seul endroit du front qui parle au backend.
- *
- * Tant que USE_MOCKS est vrai, tout tourne sans A ni C (plan B permanent).
- * Le jour où C livre : NEXT_PUBLIC_USE_MOCKS=false, et les composants
- * ne changent pas d'une ligne.
- *
- * NF2 : toute réponse serveur est validée par zod ; en cas d'échec on
- * retombe sur le mock (mode dégradé) au lieu de casser la page.
- */
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS !== "false";
 
@@ -27,7 +25,10 @@ async function safeGet<T>(
 ): Promise<T> {
   if (USE_MOCKS) return fallback;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: authHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const parsed = schema.safeParse(await res.json());
     if (!parsed.success) {
@@ -53,23 +54,70 @@ export function getClassement(): Promise<ClassementLigne[]> {
   );
 }
 
-/** Bouton « ✨ Sync » (C, H6-H8). En mock : simule une brique posée. */
+/** Bouton « ✨ Sync » (C). En mock : simule une brique posée. */
 export async function syncProjet(projectId: string): Promise<void> {
-  if (USE_MOCKS) {
-    await new Promise((r) => setTimeout(r, 900));
-    return;
-  }
-  await fetch(`/api/projects/${projectId}/sync`, { method: "POST" });
-}
-
-/** Endpoint admin de démo (C, H8-H10:30). */
-export async function simulateDay4(projectId: string): Promise<void> {
   if (USE_MOCKS) {
     await new Promise((r) => setTimeout(r, 600));
     return;
   }
-  await fetch(`/api/admin/simulate-day4`, {
+  const res = await fetch(`/api/projects/${projectId}/sync`, {
     method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Sync échoué (${res.status})`);
+}
+
+/** Endpoint admin de démo (C). */
+export async function simulateDay4(projectId: string): Promise<void> {
+  if (USE_MOCKS) {
+    await new Promise((r) => setTimeout(r, 500));
+    return;
+  }
+  const res = await fetch(`/api/admin/simulate-day4`, {
+    method: "POST",
+    headers: authHeaders(),
     body: JSON.stringify({ project_id: projectId }),
   });
+  if (!res.ok) throw new Error(`Simulation échouée (${res.status})`);
 }
+
+/** Ping backend Auth — utile pour l'écran login. */
+export async function pingBackend(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/health", { cache: "no-store" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * M1.3 — analyse portefeuille de rêves via service IA (:4000).
+ * Best-effort : si IA down, on ne bloque pas l'onboarding.
+ */
+export async function analyzeDreams(reves: string[]): Promise<{
+  ok: boolean;
+  degraded?: boolean;
+}> {
+  const user = getStoredUser();
+  try {
+    const res = await fetch("/api/ia/dreams/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user?.id ?? "00000000-0000-4000-8000-000000000001",
+        reves,
+        force: true,
+      }),
+    });
+    if (!res.ok) return { ok: false };
+    const data = (await res.json()) as { degraded?: boolean };
+    return { ok: true, degraded: data.degraded };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export const apiMode = {
+  mocks: USE_MOCKS,
+};

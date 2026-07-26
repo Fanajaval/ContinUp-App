@@ -16,6 +16,7 @@ import type { StyleSignal, TemplateType } from "@/lib/contracts";
 import { PREVIEW_S3, STYLE_META } from "@/lib/mock";
 import { TEMPLATES } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import { analyzeDreams } from "@/lib/api";
 import DreamProgress from "@/components/dream/DreamProgress";
 
 /**
@@ -66,8 +67,9 @@ export default function Onboarding() {
 
   async function terminer() {
     setEnvoi(true);
-    // POST /api/onboarding quand C aura livré — mock ici (plan B permanent)
-    await new Promise((r) => setTimeout(r, 1100));
+    // Best-effort : IA M1.3 si dispo, sinon on continue (plan B permanent)
+    await analyzeDreams(reves).catch(() => ({ ok: false }));
+    await new Promise((r) => setTimeout(r, 400));
     router.push("/dashboard");
   }
 

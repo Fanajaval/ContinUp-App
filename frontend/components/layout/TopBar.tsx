@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, Flame, LayoutGrid, Trophy } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Bell, Flame, LayoutGrid, LogOut, Trophy } from "lucide-react";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import { getStoredUser, logout, type AuthUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -22,6 +24,19 @@ export default function TopBar({
   nonLus?: number;
 }) {
   const path = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
+
+  const displayName = user?.name || pseudo;
+
+  function onLogout() {
+    logout();
+    router.push("/login");
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-night/85 backdrop-blur-xl">
@@ -29,7 +44,7 @@ export default function TopBar({
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg">🕯️</span>
           <span className="font-display text-[15px] font-bold tracking-tight">
-            Le Quatrième Jour
+            ContinUp
           </span>
         </Link>
 
@@ -66,9 +81,21 @@ export default function TopBar({
             </span>
           </div>
           <ThemeToggle />
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-candle to-ember text-[12px] font-bold text-night">
-            {pseudo.charAt(0).toUpperCase()}
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-candle to-ember text-[12px] font-bold text-night"
+            title={displayName}
+          >
+            {displayName.charAt(0).toUpperCase()}
           </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="hidden rounded-lg p-1.5 text-faint transition-colors hover:bg-surface hover:text-ink sm:inline-flex"
+            title="Se déconnecter"
+            aria-label="Se déconnecter"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
     </header>
