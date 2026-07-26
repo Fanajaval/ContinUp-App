@@ -1,11 +1,15 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 
+/**
+ * Modèle User — aligné sur database/init.sql
+ * (VARCHAR role DEFAULT 'USER', photo TEXT, timestamps created_at/updated_at)
+ */
 const User = sequelize.define(
   "User",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true,
     },
@@ -23,7 +27,7 @@ const User = sequelize.define(
       allowNull: false,
     },
     photo: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     bio: {
@@ -31,15 +35,16 @@ const User = sequelize.define(
       allowNull: true,
     },
     role: {
-      type: DataTypes.ENUM("user", "admin"),
-      defaultValue: "user",
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "USER",
     },
   },
   {
     tableName: "users",
     timestamps: true,
     createdAt: "created_at",
-    updatedAt: false,
+    updatedAt: "updated_at",
   }
 );
 
