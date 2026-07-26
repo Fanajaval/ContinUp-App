@@ -308,6 +308,9 @@ export default function LoginClient() {
                           className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-faint/80 focus:outline-none"
                         />
                       </div>
+                      <p className="mt-1.5 text-[11.5px] text-faint">
+                        Nous vérifions que ce compte GitHub existe. Son adresse email peut rester privée.
+                      </p>
                     </div>
                   </motion.div>
                 )}

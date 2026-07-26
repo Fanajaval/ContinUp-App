@@ -46,6 +46,30 @@ function normalizeGithubUsername(value) {
     : null;
 }
 
+async function fetchGithubProfile(username) {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "ContinUp",
+  };
+  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(username)}`,
+      { headers }
+    );
+    if (response.status === 404) {
+      return { error: "Ce compte GitHub n'existe pas", status: 400 };
+    }
+    if (!response.ok) {
+      return { error: "Impossible de vérifier le compte GitHub pour le moment", status: 502 };
+    }
+    return { profile: await response.json() };
+  } catch {
+    return { error: "Impossible de joindre GitHub pour le moment", status: 502 };
+  }
+}
+
 exports.register = async (req, res) => {
   try {
     const name = String(req.body.name || "").trim();
@@ -75,12 +99,25 @@ exports.register = async (req, res) => {
       return res.status(409).json({ message: "Ce compte GitHub est déjà associé" });
     }
 
+    const githubResult = await fetchGithubProfile(githubUsername);
+    if (githubResult.error) {
+      return res.status(githubResult.status).json({ message: githubResult.error });
+    }
+
+    const githubId = String(githubResult.profile.id);
+    const existingGithubId = await User.findOne({ where: { github_id: githubId } });
+    if (existingGithubId) {
+      return res.status(409).json({ message: "Ce compte GitHub est déjà associé" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       github_username: githubUsername,
+      github_id: githubId,
+      photo: githubResult.profile.avatar_url || null,
     });
 
     return res.status(201).json(authResponse(user));
@@ -250,8 +287,7 @@ exports.githubStart = async (req, res) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
     if (!clientId) {
       return res.status(501).json({
-        message:
-          "OAuth GitHub non configuré. Utilise POST /api/auth/github avec ton nom d'utilisateur.",
+        message: "OAuth GitHub non configuré. Utilise POST /api/auth/github avec ton nom d'utilisateur.",
       });
     }
 
@@ -322,7 +358,7 @@ exports.githubCallback = async (req, res) => {
       });
       const emails = await emailsRes.json();
       const primary = Array.isArray(emails)
-        ? emails.find((e) => e.primary && e.verified) || emails[0]
+        ? emails.find((entry) => entry.primary && entry.verified) || emails[0]
         : null;
       email = primary?.email || `${profile.id}@users.noreply.github.com`;
     }
