@@ -11,6 +11,7 @@
  * ═══════════════════════════════════════════════════════════════════
  */
 import { ETAPES_MAISON, LIBELLES_ETAPES } from '../../types/index.js';
+import { buildCompactTree } from '../utils/file.parser.js';
 import type {
   Declencheur,
   EtapeMaison,
@@ -137,35 +138,47 @@ export function analyzeUserPrompt(params: {
   docsDetectes: string[];
   templateType: TemplateType;
   reveLabel?: string;
+  allPaths?: string[];
+  stackDetectee?: string[];
 }): string {
-  const { repoUrl, files, docsDetectes, templateType, reveLabel } = params;
+  const { repoUrl, files, docsDetectes, templateType, reveLabel, allPaths, stackDetectee } = params;
 
-  const arborescence = files.map((f) => `- ${f.path}${f.size ? ` (${f.size} o)` : ''}`).join('\n');
+  const treePaths = allPaths?.length ? allPaths : files.map((f) => f.path);
+  const arborescence = buildCompactTree(treePaths);
 
   const contenus = files
     .filter((f) => f.content && f.content.trim().length > 0)
-    .map((f) => `### FICHIER: ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
+    .map((f) => `--- ${f.path} ---\n${f.content}`)
     .join('\n\n');
+
+  const stackHint = stackDetectee?.length
+    ? `STACK DÉTECTÉE (heuristique locale) : ${stackDetectee.join(', ')}`
+    : 'STACK : à déduire des manifestes et du code fourni.';
 
   const fastPath =
     docsDetectes.length > 0
-      ? `MODE FAST-PATH : le dépôt contient déjà de la documentation (${docsDetectes.join(', ')}).
-Appuie-toi dessus en priorité : reprends ses tâches, sa terminologie, ses intentions. Complète seulement ce qui manque.`
-      : `MODE GÉNÉRATION : aucun document de cadrage trouvé dans le dépôt.
-Tu dois TOUT déduire du code et des noms de fichiers, et générer la todolist de zéro. Ne bloque jamais : même un dépôt quasi vide donne un plan crédible.`;
+      ? `MODE FAST-PATH : docs trouvés (${docsDetectes.join(', ')}). Priorise-les.`
+      : `MODE GÉNÉRATION : pas de doc de cadrage — déduis tout du code.`;
 
-  return `DÉPÔT À ANALYSER : ${repoUrl}
-RÊVE ASSOCIÉ : ${reveLabel ?? 'non précisé'} (template visuel : ${templateType})
-
+  return `REPO: ${repoUrl}
+RÊVE: ${reveLabel ?? 'non précisé'} | template: ${templateType}
+${stackHint}
 ${fastPath}
 
-ARBORESCENCE (${files.length} fichiers retenus)
+ARBORESCENCE (${treePaths.length} fichiers utiles, contenu fourni pour ${files.filter((f) => f.content).length}) :
 ${arborescence || '(dépôt vide)'}
 
-CONTENUS
-${contenus || '(aucun contenu lisible — dépôt vide ou binaire uniquement)'}
+FICHIERS ANALYSÉS (${files.filter((f) => f.content).length}, max 20 Ko chacun) :
+${contenus || '(aucun contenu lisible)'}
 
-Produis maintenant le JSON d'analyse.`;
+Étapes obligatoires :
+1. Objectif métier + fonctionnement principal.
+2. Acquis prouvés (citer fichier + observation).
+3. Fonctionnalités restantes pour terminer le projet.
+4. Tâches avec done=true UNIQUEMENT si preuve dans le code.
+5. stack_detectee : confirmer ou compléter la stack détectée.
+
+JSON uniquement.`;
 }
 
 // ─────────────────────────────────────────────────────────────

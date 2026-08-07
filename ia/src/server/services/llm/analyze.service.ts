@@ -9,7 +9,7 @@
 import { callLLM, LlmUnavailableError } from './client.js';
 import { zAnalyzeLLM } from './schemas.js';
 import { ANALYZE_SYSTEM, analyzeUserPrompt } from './prompts.js';
-import { fetchRepoFiles, RepoUnreachableError, detectDocs } from '../utils/file.parser.js';
+import { fetchRepoFiles, RepoUnreachableError, detectDocs, detectStack } from '../utils/file.parser.js';
 import { cacheGet, cacheKey, cacheSet } from '../utils/cache.js';
 import { computeProgression } from '../utils/progression.js';
 import { saveDoc } from '../repos/doc.repo.js';
@@ -24,15 +24,21 @@ export async function analyzeRepo(req: AnalyzeRequest): Promise<AnalyzeResponse>
   // ── 1. Récupération des fichiers (fournis par C, ou lus sur GitHub) ──
   let files: RepoFile[] = req.files ?? [];
   let docsDetectes: string[] = [];
+  let allPaths: string[] = [];
+  let stackDetectee: string[] = [];
   let repoUnreachable = false;
 
   if (files.length > 0) {
-    docsDetectes = detectDocs(files.map((f) => f.path));
+    allPaths = files.map((f) => f.path);
+    docsDetectes = detectDocs(allPaths);
+    stackDetectee = detectStack(files, allPaths);
   } else {
     try {
       const fetched = await fetchRepoFiles(req.repoUrl);
       files = fetched.files;
       docsDetectes = fetched.docsDetectes;
+      allPaths = fetched.allPaths;
+      stackDetectee = fetched.stackDetectee;
     } catch (err) {
       if (err instanceof RepoUnreachableError) {
         repoUnreachable = true;
@@ -66,7 +72,7 @@ export async function analyzeRepo(req: AnalyzeRequest): Promise<AnalyzeResponse>
   let degraded = false;
 
   try {
-    llm = await runAnalyzeLLM({ req, files, docsDetectes, templateType });
+    llm = await runAnalyzeLLM({ req, files, docsDetectes, templateType, allPaths, stackDetectee });
   } catch (err) {
     if (!(err instanceof LlmUnavailableError)) console.error('[analyze] erreur inattendue', err);
     console.warn('[analyze] mode dégradé activé');
@@ -139,8 +145,10 @@ async function runAnalyzeLLM(params: {
   files: RepoFile[];
   docsDetectes: string[];
   templateType: TemplateType;
+  allPaths: string[];
+  stackDetectee: string[];
 }) {
-  const { req, files, docsDetectes, templateType } = params;
+  const { req, files, docsDetectes, templateType, allPaths, stackDetectee } = params;
   return callLLM(
     {
       tag: docsDetectes.length ? 'analyze:fastpath' : 'analyze:genere',
@@ -151,9 +159,11 @@ async function runAnalyzeLLM(params: {
         docsDetectes,
         templateType,
         reveLabel: req.reveLabel,
+        allPaths,
+        stackDetectee,
       }),
-      temperature: 0.4, // analyse = précision avant créativité
-      maxTokens: 3000,
+      temperature: 0.3,
+      maxTokens: 2048,
     },
     zAnalyzeLLM,
   );

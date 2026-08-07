@@ -1,19 +1,15 @@
 /**
  * Lecture d'un repo GitHub public + sélection intelligente des fichiers.
- *
- * Contraintes hackathon :
- * - pas de `git clone` (pas de binaire garanti sur Vercel/conteneur) → API GitHub
- * - budget de tokens serré → on trie, on tronque, on plafonne
- * - M2.2 : détection des docs existants pour le fast-path
+ * Budget tokens serré : tri, troncature 20 Ko/fichier, plafond global.
  */
 import type { RepoFile } from '../../types/index.js';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? '';
-const MAX_FILES = 40;
-const MAX_CHARS_PER_FILE = 4_000;
-const MAX_TOTAL_CHARS = 60_000;
+const MAX_FILES_WITH_CONTENT = 35;
+const MAX_CHARS_PER_FILE = 20_480;
+const MAX_TOTAL_CHARS = 55_000;
+const MAX_TREE_PATHS = 80;
 
-/** Fichiers de doc reconnus pour le fast-path (M2.2). */
 const DOC_PATTERNS = [
   /^readme(\.md|\.txt)?$/i,
   /^(docs?\/)?(cahier[-_ ]?des[-_ ]?charges|cdc|specs?|specifications?)\.(md|txt)$/i,
@@ -23,20 +19,21 @@ const DOC_PATTERNS = [
   /^changelog\.md$/i,
 ];
 
-/** Fichiers dont le CONTENU est précieux pour comprendre le projet. */
+const MANIFEST_FILES = [
+  'package.json', 'requirements.txt', 'pyproject.toml', 'composer.json', 'pom.xml',
+  'build.gradle', 'go.mod', 'Cargo.toml', 'Dockerfile', 'docker-compose.yml',
+  'docker-compose.yaml', '.env.example', 'tsconfig.json', 'next.config.js',
+  'next.config.mjs', 'next.config.ts', 'vite.config.js', 'vite.config.ts',
+];
+
 const HIGH_VALUE = [
-  /package\.json$/,
-  /requirements\.txt$/,
-  /pyproject\.toml$/,
-  /composer\.json$/,
-  /pom\.xml$/,
-  /build\.gradle$/,
-  /go\.mod$/,
-  /Cargo\.toml$/,
-  /schema\.(sql|prisma)$/i,
-  /migrations?\/.*\.sql$/i,
-  /docker-compose\.ya?ml$/i,
-  /\.env\.example$/,
+  /package\.json$/, /requirements\.txt$/, /pyproject\.toml$/, /composer\.json$/,
+  /pom\.xml$/, /build\.gradle$/, /go\.mod$/, /Cargo\.toml$/,
+  /schema\.(sql|prisma)$/i, /migrations?\/.*\.sql$/i, /docker-compose\.ya?ml$/i,
+  /^Dockerfile$/i, /\.env\.example$/,
+  /(^|\/)(main|index|app|server)\.(ts|tsx|js|jsx|py|go|java)$/i,
+  /(^|\/)(routes?|controllers?|services?|handlers?|use-cases?|pages?|components?|models?)\//i,
+  /(^|\/)(auth|middleware|middlewares|database|db|config)\//i,
 ];
 
 const IGNORED_DIRS = [
@@ -48,7 +45,7 @@ const IGNORED_DIRS = [
 const IGNORED_EXT = [
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.pdf',
   '.zip', '.tar', '.gz', '.mp4', '.mp3', '.woff', '.woff2', '.ttf',
-  '.lock', '.min.js', '.map', '.bin', '.jar', '.class',
+  '.lock', '.min.js', '.map', '.bin', '.jar', '.class', '.exe',
 ];
 
 const CODE_EXT = [
@@ -64,33 +61,21 @@ export class RepoUnreachableError extends Error {
   }
 }
 
-export interface ParsedRepo {
-  owner: string;
-  repo: string;
-  branch: string;
-}
+export interface ParsedRepo { owner: string; repo: string; branch: string }
 
-/** Accepte : URL https, git@, "owner/repo", avec ou sans .git / /tree/branch. */
 export function parseRepoUrl(input: string): ParsedRepo {
   const raw = input.trim().replace(/\.git$/, '').replace(/\/$/, '');
-
   const short = raw.match(/^([\w.-]+)\/([\w.-]+)$/);
   if (short) return { owner: short[1], repo: short[2], branch: '' };
-
   const ssh = raw.match(/^git@github\.com:([\w.-]+)\/([\w.-]+)$/);
   if (ssh) return { owner: ssh[1], repo: ssh[2], branch: '' };
-
   const https = raw.match(/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/tree\/([\w.\-/]+))?/);
   if (https) return { owner: https[1], repo: https[2], branch: https[3] ?? '' };
-
   throw new RepoUnreachableError(`URL de dépôt non reconnue : ${input}`);
 }
 
 function ghHeaders(): Record<string, string> {
-  const h: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'quatrieme-jour-app',
-  };
+  const h: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'continup-scanner' };
   if (GITHUB_TOKEN) h.Authorization = `Bearer ${GITHUB_TOKEN}`;
   return h;
 }
@@ -112,16 +97,23 @@ function isIgnored(path: string): boolean {
   return false;
 }
 
-/** Score de pertinence : plus c'est haut, plus on veut le contenu. */
+function isManifest(path: string): boolean {
+  const base = path.split('/').pop() ?? path;
+  return MANIFEST_FILES.some((m) => base.toLowerCase() === m.toLowerCase());
+}
+
 function score(path: string, size: number): number {
   const base = path.split('/').pop() ?? path;
   let s = 0;
-  if (DOC_PATTERNS.some((p) => p.test(path) || p.test(base))) s += 100;
+  if (DOC_PATTERNS.some((p) => p.test(path) || p.test(base))) s += 120;
+  if (isManifest(path)) s += 90;
   if (HIGH_VALUE.some((p) => p.test(path))) s += 60;
+  if (/(^|\/)(main|index|app|server)\.(ts|tsx|js|jsx|py|go|java)$/i.test(path)) s += 45;
+  if (/(route|controller|service|handler|page|component|model|schema|middleware)/i.test(path)) s += 30;
   if (CODE_EXT.some((e) => path.endsWith(e))) s += 20;
-  s -= path.split('/').length * 2;      // on privilégie la racine
-  if (size > 40_000) s -= 30;           // les gros fichiers coûtent cher
-  if (/test|spec|\.d\.ts$/.test(path)) s -= 15;
+  s -= path.split('/').length * 2;
+  if (size > 50_000) s -= 40;
+  if (/test|spec|\.d\.ts$|mock|fixture/i.test(path)) s -= 20;
   return s;
 }
 
@@ -132,92 +124,118 @@ export function detectDocs(paths: string[]): string[] {
   });
 }
 
+export function detectStack(files: RepoFile[], allPaths: string[] = []): string[] {
+  const stack = new Set<string>();
+  const paths = allPaths.length ? allPaths : files.map((f) => f.path);
+  const pathStr = paths.join('\n').toLowerCase();
+
+  const readManifest = (name: string): Record<string, unknown> | null => {
+    const f = files.find((file) => file.path.split('/').pop()?.toLowerCase() === name.toLowerCase() && file.content);
+    if (!f?.content) return null;
+    try { return JSON.parse(f.content) as Record<string, unknown>; } catch { return null; }
+  };
+
+  const pkg = readManifest('package.json');
+  if (pkg) {
+    stack.add('Node.js');
+    const deps = { ...(pkg.dependencies as Record<string, string> ?? {}), ...(pkg.devDependencies as Record<string, string> ?? {}) };
+    if (deps.next) stack.add('Next.js');
+    if (deps.react || deps['react-dom']) stack.add('React');
+    if (deps.express) stack.add('Express');
+    if (deps.typescript || pathStr.includes('.ts')) stack.add('TypeScript');
+    if (deps.prisma || deps['@prisma/client']) stack.add('Prisma');
+    if (deps.pg || deps.postgres) stack.add('PostgreSQL');
+    if (deps['react-native']) stack.add('React Native');
+  }
+
+  if (files.some((f) => f.path.endsWith('requirements.txt') || f.path.endsWith('pyproject.toml'))) {
+    stack.add('Python');
+    const req = files.find((f) => f.path.endsWith('requirements.txt'))?.content?.toLowerCase() ?? '';
+    if (req.includes('django')) stack.add('Django');
+    if (req.includes('fastapi')) stack.add('FastAPI');
+    if (req.includes('flask')) stack.add('Flask');
+  }
+
+  if (files.some((f) => f.path.endsWith('pom.xml') || f.path.endsWith('build.gradle'))) {
+    stack.add('Java');
+    stack.add('Spring Boot');
+  }
+  if (files.some((f) => f.path.endsWith('composer.json'))) { stack.add('PHP'); stack.add('Laravel'); }
+  if (files.some((f) => f.path.endsWith('go.mod'))) stack.add('Go');
+  if (files.some((f) => f.path.endsWith('Cargo.toml'))) stack.add('Rust');
+  if (pathStr.includes('dockerfile') || pathStr.includes('docker-compose')) stack.add('Docker');
+
+  return [...stack];
+}
+
+export function buildCompactTree(paths: string[]): string {
+  const sorted = [...paths].sort();
+  const shown = sorted.slice(0, MAX_TREE_PATHS);
+  const lines = shown.map((p) => `- ${p}`);
+  if (sorted.length > MAX_TREE_PATHS) lines.push(`… (+${sorted.length - MAX_TREE_PATHS} autres fichiers)`);
+  return lines.join('\n');
+}
+
 interface TreeItem { path: string; type: string; size?: number }
 
-/**
- * Récupère l'arborescence + le contenu des fichiers les plus pertinents.
- * Ne throw QUE si le dépôt est introuvable — un dépôt vide renvoie [].
- */
-export async function fetchRepoFiles(repoUrl: string): Promise<{ files: RepoFile[]; docsDetectes: string[]; branch: string }> {
+export async function fetchRepoFiles(repoUrl: string): Promise<{
+  files: RepoFile[]; docsDetectes: string[]; branch: string; allPaths: string[]; stackDetectee: string[];
+}> {
   const { owner, repo, branch: wanted } = parseRepoUrl(repoUrl);
-
   let branch = wanted;
   if (!branch) {
     const metaRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}`);
     if (metaRes.status === 404) throw new RepoUnreachableError(`Dépôt introuvable ou privé : ${owner}/${repo}`);
-    if (metaRes.status === 403) throw new RepoUnreachableError('Limite de requêtes GitHub atteinte — ajoute un GITHUB_TOKEN dans .env');
+    if (metaRes.status === 403) throw new RepoUnreachableError('Limite GitHub — ajoute GITHUB_TOKEN dans .env');
     if (!metaRes.ok) throw new RepoUnreachableError(`GitHub a répondu ${metaRes.status}`);
     const meta = (await metaRes.json()) as { default_branch?: string };
     branch = meta.default_branch ?? 'main';
   }
 
-  const treeRes = await ghFetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
-  );
+  const treeRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`);
   if (!treeRes.ok) {
-    // Dépôt initialisé mais sans commit : ce n'est PAS une erreur bloquante (M2.1)
-    if (treeRes.status === 409 || treeRes.status === 404) {
-      return { files: [], docsDetectes: [], branch };
-    }
+    if (treeRes.status === 409 || treeRes.status === 404) return { files: [], docsDetectes: [], branch, allPaths: [], stackDetectee: [] };
     throw new RepoUnreachableError(`Arborescence illisible (${treeRes.status})`);
   }
 
-  const tree = (await treeRes.json()) as { tree?: TreeItem[]; truncated?: boolean };
+  const tree = (await treeRes.json()) as { tree?: TreeItem[] };
   const blobs = (tree.tree ?? []).filter((i) => i.type === 'blob' && !isIgnored(i.path));
+  const allPaths = blobs.map((b) => b.path);
+  const docsDetectes = detectDocs(allPaths);
 
-  const docsDetectes = detectDocs(blobs.map((b) => b.path));
-
-  const selected = blobs
-    .map((b) => ({ ...b, _score: score(b.path, b.size ?? 0) }))
-    .sort((a, b) => b._score - a._score)
-    .slice(0, MAX_FILES);
+  const selected = blobs.map((b) => ({ ...b, _score: score(b.path, b.size ?? 0) }))
+    .sort((a, b) => b._score - a._score).slice(0, MAX_FILES_WITH_CONTENT);
 
   const files: RepoFile[] = [];
   let total = 0;
 
-  // Téléchargement en parallèle par lots de 8 (rapide sans se faire throttler)
-  for (let i = 0; i < selected.length; i += 8) {
+  for (let i = 0; i < selected.length; i += 6) {
     if (total >= MAX_TOTAL_CHARS) break;
-    const batch = selected.slice(i, i + 8);
-    const results = await Promise.all(
-      batch.map(async (item) => {
-        try {
-          const r = await ghFetch(
-            `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${item.path}`,
-            8_000,
-          );
-          if (!r.ok) return { path: item.path, content: '', size: item.size };
-          let text = await r.text();
-          if (text.length > MAX_CHARS_PER_FILE) {
-            text = `${text.slice(0, MAX_CHARS_PER_FILE)}\n… [tronqué : ${text.length} caractères au total]`;
-          }
-          return { path: item.path, content: text, size: item.size };
-        } catch {
-          return { path: item.path, content: '', size: item.size };
+    const batch = selected.slice(i, i + 6);
+    const results = await Promise.all(batch.map(async (item) => {
+      try {
+        const r = await ghFetch(`https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${item.path}`, 8_000);
+        if (!r.ok) return { path: item.path, content: '', size: item.size };
+        let text = await r.text();
+        if (text.length > MAX_CHARS_PER_FILE) {
+          text = `${text.slice(0, MAX_CHARS_PER_FILE)}\n… [tronqué à 20 Ko — ${text.length} caractères au total]`;
         }
-      }),
-    );
-    for (const f of results) {
-      if (total + f.content.length > MAX_TOTAL_CHARS) {
-        files.push({ path: f.path, content: '', size: f.size }); // on garde le nom dans l'arborescence
-        continue;
+        return { path: item.path, content: text, size: item.size };
+      } catch {
+        return { path: item.path, content: '', size: item.size };
       }
+    }));
+    for (const f of results) {
+      if (!f.content) continue;
+      if (total + f.content.length > MAX_TOTAL_CHARS) break;
       total += f.content.length;
       files.push(f);
     }
   }
 
-  // On ajoute les chemins non téléchargés : l'arborescence seule est déjà informative
-  const kept = new Set(files.map((f) => f.path));
-  for (const b of blobs) {
-    if (files.length >= 120) break;
-    if (!kept.has(b.path)) files.push({ path: b.path, content: '', size: b.size });
-  }
-
-  return { files, docsDetectes, branch };
+  return { files, docsDetectes, branch, allPaths, stackDetectee: detectStack(files, allPaths) };
 }
 
-/** Analyse de diff (webhook) : on ne garde que les chemins, largement suffisant. */
 export function summarizeDiff(changedPaths: string[]): string {
   if (!changedPaths.length) return 'aucun fichier modifié';
   const byDir = new Map<string, number>();
@@ -225,9 +243,6 @@ export function summarizeDiff(changedPaths: string[]): string {
     const dir = p.includes('/') ? p.split('/').slice(0, -1).join('/') : '(racine)';
     byDir.set(dir, (byDir.get(dir) ?? 0) + 1);
   }
-  return [...byDir.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([d, n]) => `${d} (${n} fichier${n > 1 ? 's' : ''})`)
-    .join(', ');
+  return [...byDir.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)
+    .map(([d, n]) => `${d} (${n} fichier${n > 1 ? 's' : ''})`).join(', ');
 }

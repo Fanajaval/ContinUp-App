@@ -14,7 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { DashboardResponse, Project } from "@/lib/contracts";
-import { analyzeProject, getDashboard, getProjectAnalysis, syncProjet, type ProjectAnalysis } from "@/lib/api";
+import { analyzeProject, celebrateReturn, getDashboard, getProjectAnalysis, syncProjet, type ProjectAnalysis } from "@/lib/api";
 import { getTemplate, prochaineEtape } from "@/lib/templates";
 import { cn, depuis } from "@/lib/utils";
 import TopBar from "@/components/layout/TopBar";
@@ -91,26 +91,35 @@ export default function ProjetPage() {
   const { push } = useToast();
 
   useEffect(() => {
-    getDashboard().then((d) => {
+    getDashboard().then(async (d) => {
       setData(d);
       const p = d.projects.find((x) => x.id === id) ?? d.projects[0];
       setProjet(p);
       if (p) getProjectAnalysis(p.id).then(setAnalysis).catch(() => undefined);
 
-      // ── S5 : célébration du retour ──────────────────────────
       if (p?.statut === "silencieux" && !dejaCelebre.current) {
         dejaCelebre.current = true;
-        setTimeout(() => {
+        try {
+          const { project, signal, xp_awarded } = await celebrateReturn(p.id);
+          setProjet(project);
           setRetour(true);
-          push({
-            declencheur: "S5",
-            style: d.user.style_signal,
-            titre: "Te revoilà. On reprend exactement où tu t'es arrêtée.",
-            preuve: `Ton chantier t'a attendue, lumière allumée. ${p.progression} % étaient déjà debout : ${p.etape_semantique}.`,
-            microAction: p.prochaine_action ?? "Reprends par la plus petite chose (15 min)",
-            xp: 5,
-          });
-        }, 700);
+          const refreshed = await getDashboard();
+          setData(refreshed);
+          setTimeout(() => {
+            if (signal) {
+              push({
+                declencheur: "S5",
+                style: d.user.style_signal,
+                titre: signal.contenu.titre,
+                preuve: signal.contenu.preuve_de_progres,
+                microAction: signal.contenu.micro_action,
+                xp: xp_awarded,
+              });
+            }
+          }, 700);
+        } catch {
+          /* déjà célébré ou erreur réseau */
+        }
       }
     });
   }, [id, push]);
@@ -135,28 +144,28 @@ export default function ProjetPage() {
   async function handleSync() {
     if (!projet || !data) return;
     setSync(true);
-    await syncProjet(projet.id);
-    const suivante = prochaineEtape(projet.template_type, projet.etapes_done);
-    if (suivante) {
-      setProjet({
-        ...projet,
-        etapes_done: [...projet.etapes_done, suivante.id],
-        progression: Math.min(100, projet.progression + 12),
-        etape_semantique: suivante.label,
-        statut: "actif",
-        xp_projet: projet.xp_projet + 1,
-        derniere_activite: new Date().toISOString(),
-      });
-      push({
-        declencheur: "S1",
-        style: data.user.style_signal,
-        titre: `${suivante.label} 🧱`,
-        preuve: `Une brique de plus. ${projet.repo_nom} avance vraiment.`,
-        microAction: projet.prochaine_action ?? "Enchaîne tant que c'est chaud (20 min)",
-        xp: 1,
-      });
+    setAnalysisError("");
+    try {
+      const { project: synced, signal } = await syncProjet(projet.id);
+      setProjet(synced);
+      const latestAnalysis = await getProjectAnalysis(projet.id);
+      setAnalysis(latestAnalysis);
+      setData(await getDashboard());
+      if (signal) {
+        push({
+          declencheur: "S1",
+          style: data.user.style_signal,
+          titre: signal.contenu.titre,
+          preuve: signal.contenu.preuve_de_progres,
+          microAction: signal.contenu.micro_action,
+          xp: 1,
+        });
+      }
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "Synchronisation indisponible");
+    } finally {
+      setSync(false);
     }
-    setSync(false);
   }
 
   if (!data || !projet) {

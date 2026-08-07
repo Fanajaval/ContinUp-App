@@ -1,36 +1,27 @@
 /**
  * Client LLM unique (NF2 : retries, timeouts, mode dégradé).
- * Compatible OpenAI API : OpenAI, Groq, Mistral, OpenRouter, Together, Ollama…
- * Il suffit de changer LLM_BASE_URL + LLM_MODEL dans .env.
- *
- * Règle d'or technique : ce module ne connaît RIEN du métier.
- * Il prend un prompt système + un prompt user + un schéma Zod, il rend un objet validé.
+ * Provider : Google Gemini (API native generateContent).
  */
-import OpenAI from 'openai';
 import type { ZodTypeAny, TypeOf } from 'zod';
 
-const API_KEY = process.env.LLM_API_KEY ?? '';
-const BASE_URL = process.env.LLM_BASE_URL ?? 'https://api.openai.com/v1';
-const MODEL = process.env.LLM_MODEL ?? 'gpt-4o-mini';
-const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS ?? 25_000);
+const API_KEY = process.env.LLM_API_KEY ?? process.env.GEMINI_API_KEY ?? '';
+/** Modèle par défaut : gemini-3.5-flash-lite (léger, dispo nouveaux comptes Google AI Studio). */
+const MODEL = process.env.LLM_MODEL ?? 'gemini-3.5-flash-lite';
+const BASE_URL = (process.env.LLM_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta').replace(/\/$/, '');
+const TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS ?? 45_000);
 const MAX_RETRIES = Number(process.env.LLM_MAX_RETRIES ?? 3);
-const TEMPERATURE = Number(process.env.LLM_TEMPERATURE ?? 0.7);
+const TEMPERATURE = Number(process.env.LLM_TEMPERATURE ?? 0.4);
 
-/** Mode dégradé : pas de clé OU LLM_OFFLINE=1 → on ne tente même pas le réseau. */
+const MODEL_CHAIN = [...new Set([
+  MODEL,
+  'gemini-3.5-flash-lite',
+  'gemini-flash-latest',
+  'gemini-3-flash-preview',
+])];
+
+let activeModel = MODEL;
+
 export const LLM_OFFLINE = process.env.LLM_OFFLINE === '1' || !API_KEY;
-
-let _client: OpenAI | null = null;
-function client(): OpenAI {
-  if (!_client) {
-    _client = new OpenAI({
-      apiKey: API_KEY || 'offline',
-      baseURL: BASE_URL,
-      timeout: TIMEOUT_MS,
-      maxRetries: 0, // on gère nos propres retries pour logger et backoffer
-    });
-  }
-  return _client;
-}
 
 export class LlmUnavailableError extends Error {
   constructor(message: string, readonly cause?: unknown) {
@@ -41,10 +32,6 @@ export class LlmUnavailableError extends Error {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * Extrait le premier objet JSON valide d'une réponse LLM.
- * Gère : ```json ... ```, texte parasite avant/après, accolades imbriquées.
- */
 export function extractJson(raw: string): unknown {
   const cleaned = raw
     .replace(/^\uFEFF/, '')
@@ -55,7 +42,7 @@ export function extractJson(raw: string): unknown {
   try {
     return JSON.parse(cleaned);
   } catch {
-    /* on tente l'extraction par balayage */
+    /* balayage */
   }
 
   const start = cleaned.indexOf('{');
@@ -73,10 +60,7 @@ export function extractJson(raw: string): unknown {
     if (c === '{') depth++;
     else if (c === '}') {
       depth--;
-      if (depth === 0) {
-        const candidate = cleaned.slice(start, i + 1);
-        return JSON.parse(candidate);
-      }
+      if (depth === 0) return JSON.parse(cleaned.slice(start, i + 1));
     }
   }
   throw new Error('JSON incomplet dans la réponse LLM');
@@ -85,24 +69,74 @@ export function extractJson(raw: string): unknown {
 export interface LlmCallOptions {
   system: string;
   user: string;
-  /** Nom pour les logs (ex. 'analyze', 'signal:S3'). */
   tag: string;
   temperature?: number;
   maxTokens?: number;
 }
 
-/**
- * Appel LLM + parsing + validation Zod, avec retries à backoff exponentiel.
- * En cas d'échec de validation, on renvoie l'erreur au modèle au tour suivant
- * (auto-réparation) — technique la plus rentable en hackathon.
- */
-export async function callLLM<S extends ZodTypeAny>(
-  opts: LlmCallOptions,
-  schema: S,
-): Promise<TypeOf<S>> {
-  if (LLM_OFFLINE) {
-    throw new LlmUnavailableError(`[${opts.tag}] LLM hors ligne (LLM_OFFLINE=1 ou clé absente)`);
+interface GeminiResponse {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
+  error?: { message?: string };
+}
+
+function isModelUnavailableError(msg: string): boolean {
+  return /no longer available|not found|404|is not supported|invalid model/i.test(msg);
+}
+
+async function geminiGenerate(opts: LlmCallOptions, repairHint: string, model: string): Promise<string> {
+  const url = `${BASE_URL}/models/${model}:generateContent`;
+  const userText = repairHint ? `${opts.user}\n\n${repairHint}` : opts.user;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
+        contents: [{ role: 'user', parts: [{ text: userText }] }],
+        generationConfig: {
+          temperature: opts.temperature ?? TEMPERATURE,
+          maxOutputTokens: opts.maxTokens ?? 2048,
+          responseMimeType: 'application/json',
+        },
+      }),
+      signal: controller.signal,
+    });
+    const data = (await res.json()) as GeminiResponse;
+    if (!res.ok) throw new Error(data.error?.message ?? `HTTP ${res.status}`);
+    const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+    if (!text.trim()) throw new Error(`Réponse Gemini vide (${data.candidates?.[0]?.finishReason ?? 'UNKNOWN'})`);
+    return text;
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+async function geminiGenerateWithFallback(opts: LlmCallOptions, repairHint: string): Promise<string> {
+  let lastError: unknown;
+  for (const model of MODEL_CHAIN) {
+    try {
+      const text = await geminiGenerate(opts, repairHint, model);
+      if (model !== activeModel) console.log(`[llm] bascule modèle → ${model}`);
+      activeModel = model;
+      return text;
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isModelUnavailableError(msg)) {
+        console.warn(`[llm] modèle ${model} indisponible : ${msg}`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+export async function callLLM<S extends ZodTypeAny>(opts: LlmCallOptions, schema: S): Promise<TypeOf<S>> {
+  if (LLM_OFFLINE) throw new LlmUnavailableError(`[${opts.tag}] LLM hors ligne`);
 
   let lastError: unknown;
   let repairHint = '';
@@ -110,56 +144,33 @@ export async function callLLM<S extends ZodTypeAny>(
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const started = Date.now();
     try {
-      const completion = await client().chat.completions.create({
-        model: MODEL,
-        temperature: opts.temperature ?? TEMPERATURE,
-        max_tokens: opts.maxTokens ?? 2000,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: opts.system },
-          { role: 'user', content: repairHint ? `${opts.user}\n\n${repairHint}` : opts.user },
-        ],
-      });
-
-      const raw = completion.choices[0]?.message?.content ?? '';
-      const json = extractJson(raw);
-      const parsed = schema.safeParse(json);
-
+      const raw = await geminiGenerateWithFallback(opts, repairHint);
+      const parsed = schema.safeParse(extractJson(raw));
       if (!parsed.success) {
-        const issues = parsed.error.issues
-          .slice(0, 6)
-          .map((i) => `- champ "${i.path.join('.')}" : ${i.message}`)
-          .join('\n');
-        repairHint = `⚠️ Ta réponse précédente était invalide :\n${issues}\nRenvoie UNIQUEMENT le JSON corrigé, rien d'autre.`;
+        const issues = parsed.error.issues.slice(0, 6).map((i) => `- "${i.path.join('.')}" : ${i.message}`).join('\n');
+        repairHint = `⚠️ JSON invalide :\n${issues}\nRenvoie UNIQUEMENT le JSON corrigé.`;
         throw new Error(`Validation Zod échouée:\n${issues}`);
       }
-
-      console.log(`[llm:${opts.tag}] ok en ${Date.now() - started}ms (essai ${attempt}/${MAX_RETRIES})`);
+      console.log(`[llm:${opts.tag}] ok en ${Date.now() - started}ms (${attempt}/${MAX_RETRIES})`);
       return parsed.data;
     } catch (err) {
       lastError = err;
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm:${opts.tag}] échec essai ${attempt}/${MAX_RETRIES} (${Date.now() - started}ms) : ${msg}`);
+      console.warn(`[llm:${opts.tag}] échec ${attempt}/${MAX_RETRIES} : ${msg}`);
       if (attempt < MAX_RETRIES) {
-        // Groq 429 : respecter le "try again in Xs" si présent, sinon backoff plus long
-        const retryMatch = msg.match(/try again in ([\d.]+)s/i);
-        const waitMs = retryMatch
-          ? Math.ceil(Number(retryMatch[1]) * 1000) + 400
-          : 800 * 2 ** (attempt - 1) + Math.floor(Math.random() * 300);
-        await sleep(waitMs);
+        const retryMatch = msg.match(/retry in ([\d.]+)s/i);
+        await sleep(retryMatch ? Math.ceil(Number(retryMatch[1]) * 1000) + 400 : 800 * 2 ** (attempt - 1));
       }
     }
   }
-
-  throw new LlmUnavailableError(
-    `[${opts.tag}] LLM indisponible après ${MAX_RETRIES} essais`,
-    lastError,
-  );
+  throw new LlmUnavailableError(`[${opts.tag}] indisponible après ${MAX_RETRIES} essais`, lastError);
 }
 
 export const llmInfo = () => ({
-  model: MODEL,
+  model: activeModel,
+  configuredModel: MODEL,
   baseUrl: BASE_URL,
+  provider: 'gemini',
   offline: LLM_OFFLINE,
   timeoutMs: TIMEOUT_MS,
   maxRetries: MAX_RETRIES,

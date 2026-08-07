@@ -49,6 +49,16 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "user",
     },
+    xp_total: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    style_signal: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: "motivant",
+    },
   },
   {
     tableName: "users",

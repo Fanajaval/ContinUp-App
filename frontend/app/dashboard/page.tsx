@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Bell, Hammer, Loader2, Plus, RefreshCw } from "lucide-react";
 import type { DashboardResponse, Project } from "@/lib/contracts";
 import { getDashboard, simulateDay4, syncProjet } from "@/lib/api";
+import type { Signal } from "@/lib/contracts";
 import { prochaineEtape } from "@/lib/templates";
 import { heuresDepuis } from "@/lib/utils";
 import TopBar from "@/components/layout/TopBar";
@@ -77,60 +78,45 @@ export default function DashboardPage() {
   const signalEnCours = data?.signaux_actifs.find((s) => !s.lu);
   const nonLus = data?.signaux_actifs.filter((s) => !s.lu).length ?? 0;
 
-  /* ── Démo : Sync → brique → toast S1 (le flux du CP2) ─────────── */
+  function pushFromSignal(signal: Signal, xp = 0) {
+    if (!data) return;
+    push({
+      declencheur: signal.declencheur,
+      style: signal.style,
+      titre: signal.contenu.titre,
+      preuve: signal.contenu.preuve_de_progres,
+      microAction: signal.contenu.micro_action,
+      xp,
+    });
+  }
+
   async function handleSync() {
     const cible = projets.find((p) => p.statut === "actif") ?? projets[0];
     if (!cible || !data) return;
     setBusy("sync");
-    await syncProjet(cible.id);
-
-    const suivante = prochaineEtape(cible.template_type, cible.etapes_done);
-    if (suivante) {
-      setData({
-        ...data,
-        projects: data.projects.map((p) =>
-          p.id === cible.id
-            ? {
-                ...p,
-                etapes_done: [...p.etapes_done, suivante.id],
-                progression: Math.min(100, p.progression + 12),
-                etape_semantique: suivante.label,
-                statut: "actif",
-                derniere_activite: new Date().toISOString(),
-                xp_projet: p.xp_projet + 1,
-              }
-            : p
-        ),
-        user: { ...data.user, xp_total: data.user.xp_total + 1 },
-      });
-      push({
-        declencheur: "S1",
-        style: data.user.style_signal,
-        titre: `${suivante.label} 🧱`,
-        preuve: `${cible.repo_nom} avance. Une brique de plus dans ${reveDe(cible.reve_id)}.`,
-        microAction: cible.prochaine_action ?? "Continue sur ta lancée (20 min)",
-        xp: 1,
-      });
+    try {
+      const { signal } = await syncProjet(cible.id);
+      setData(await getDashboard());
+      if (signal) pushFromSignal(signal, 1);
+    } catch {
+      /* erreur affichée par l'appel API */
     }
     setBusy(null);
   }
 
-  /* ── Démo : simulate-day4 → toast S3 (le joyau) ───────────────── */
   async function handleDay4() {
     const cible = projets.find((p) => p.statut === "silencieux");
     if (!cible || !data) return;
     setBusy("day4");
-    await simulateDay4(cible.id);
-    const sig = data.signaux_actifs.find((s) => s.declencheur === "S3");
-    push({
-      declencheur: "S3",
-      style: data.user.style_signal,
-      titre: sig?.contenu.titre ?? `${reveDe(cible.reve_id)} t'attend`,
-      preuve:
-        sig?.contenu.preuve_de_progres ??
-        `Tu es déjà à ${cible.progression} % : ${cible.etape_semantique}.`,
-      microAction: sig?.contenu.micro_action ?? cible.prochaine_action ?? "",
-    });
+    try {
+      const signals = await simulateDay4(cible.id);
+      const refreshed = await getDashboard();
+      setData(refreshed);
+      const sig = signals[0] ?? refreshed.signaux_actifs.find((s) => s.declencheur === "S3");
+      if (sig) pushFromSignal(sig);
+    } catch {
+      /* erreur silencieuse */
+    }
     setBusy(null);
   }
 

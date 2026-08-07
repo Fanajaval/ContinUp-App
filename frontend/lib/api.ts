@@ -12,6 +12,7 @@ import {
   type ClassementLigne,
   type DashboardResponse,
   type Project,
+  type Signal,
 } from "./contracts";
 import { MOCK_CLASSEMENT } from "./mock";
 import { authHeaders, getStoredUser } from "./auth";
@@ -116,31 +117,54 @@ export function getClassement(): Promise<ClassementLigne[]> {
   );
 }
 
-/** Bouton « ✨ Sync » (C). En mock : simule une brique posée. */
-export async function syncProjet(projectId: string): Promise<void> {
+/** Sync — relit le repo, enregistre brique + signal S1 côté serveur. */
+export async function syncProjet(projectId: string): Promise<{ project: Project; signal?: Signal }> {
   if (USE_MOCKS) {
     await new Promise((r) => setTimeout(r, 600));
-    return;
+    throw new Error("La synchronisation réelle requiert le mode sans mocks");
   }
   const res = await fetch(`/api/projects/${projectId}/sync`, {
     method: "POST",
     headers: authHeaders(),
   });
-  if (!res.ok) throw new Error(`Sync échoué (${res.status})`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || `Sync échoué (${res.status})`);
+  return { project: body.project as Project, signal: body.signal as Signal | undefined };
 }
 
-/** Endpoint admin de démo (C). */
-export async function simulateDay4(projectId: string): Promise<void> {
+/** S5 — célébration du retour sur un projet silencieux. */
+export async function celebrateReturn(projectId: string): Promise<{
+  project: Project;
+  signal?: Signal;
+  xp_awarded: number;
+}> {
+  const res = await fetch(`/api/projects/${projectId}/return`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || "Impossible de célébrer le retour");
+  return {
+    project: body.project as Project,
+    signal: body.signal as Signal | undefined,
+    xp_awarded: Number(body.xp_awarded ?? 0),
+  };
+}
+
+/** Simule le Signal du 4ᵉ jour (S3) sur projet(s) silencieux(s). */
+export async function simulateDay4(projectId: string): Promise<Signal[]> {
   if (USE_MOCKS) {
     await new Promise((r) => setTimeout(r, 500));
-    return;
+    return [];
   }
   const res = await fetch(`/api/admin/simulate-day4`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ project_id: projectId }),
   });
-  if (!res.ok) throw new Error(`Simulation échouée (${res.status})`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || `Simulation échouée (${res.status})`);
+  return (body.signals ?? []) as Signal[];
 }
 
 /** Ping backend Auth — utile pour l'écran login. */
